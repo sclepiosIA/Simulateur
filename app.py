@@ -21,7 +21,7 @@ Ce simulateur permet d’estimer les **gains financiers potentiels** issus d’u
 # Interface Streamlit
 col1, col2, col3 = st.columns(3)
 with col1:
-    nb_passages = st.slider("Nombre total de passages aux urgences", 10000, 300000, 40000, step=500)
+    nb_passages = st.slider("Nombre total de passages aux urgences", 10000, 100000, 40000, step=1000)
 with col2:
     taux_uhcd_actuel = st.slider("Taux actuel d’UHCD (%)", 0, 30, 5)
 with col3:
@@ -38,11 +38,17 @@ uhcd_mono_rum_init = (taux_uhcd_actuel * taux_mono_rum) / 100
 uhcd_mono_rum_cible = (taux_uhcd_cible * taux_mono_rum) / 100
 st.markdown(f"<br><div style='text-align: center; font-size: 18px;'><b>📈 Taux UHCD mono-RUM sur le total des passages :</b><br>Taux initial : <strong>{uhcd_mono_rum_init:.2f}%</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Taux cible : <strong>{uhcd_mono_rum_cible:.2f}%</strong></div><br>", unsafe_allow_html=True)
 
-# Constantes tarifaires
-TARIF_AVIS_SPE = 24.56
-TARIF_CCMU2 = 14.53
-TARIF_CCMU3 = 19.38
-TARIF_UHCD = 400
+# Constantes tarifaires personnalisables
+with st.expander("🔧 Modifier les tarifs de valorisation"):
+    col_a, col_b, col_c, col_d = st.columns(4)
+    with col_a:
+        TARIF_AVIS_SPE = st.number_input("Tarif Avis Spécialisé (€)", value=24.56, step=0.01)
+    with col_b:
+        TARIF_CCMU2 = st.number_input("Tarif CCMU 2+ (€)", value=14.53, step=0.01)
+    with col_c:
+        TARIF_CCMU3 = st.number_input("Tarif CCMU 3+ (€)", value=19.38, step=0.01)
+    with col_d:
+        TARIF_UHCD = st.number_input("Tarif UHCD (€)", value=400.0, step=10.0)
 BONUS_MONORUM = 0.05 * TARIF_UHCD
 
 # Calculs
