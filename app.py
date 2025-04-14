@@ -5,18 +5,22 @@ import pandas as pd
 import plotly.express as px
 from fpdf import FPDF
 import base64
+import os
 
 st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wide")
 
-# Logo centré
-st.markdown("<div style='text-align: center;'><img src='logo_complet.png' width='250'></div>", unsafe_allow_html=True)
+# Affichage du logo depuis URL si fichier local indisponible
+logo_path = "logo_complet.png"
+if os.path.exists(logo_path):
+    st.markdown(f"<div style='text-align: center;'><img src='{logo_path}' width='250'></div>", unsafe_allow_html=True)
+else:
+    st.markdown("<div style='text-align: center;'><img src='https://www.sclepios-ia.com/wp-content/uploads/2024/03/logo_SclepiosIA_complet.png' width='250'></div>", unsafe_allow_html=True)
 
 st.markdown("<h1 style='text-align: center;'>📊 Simulateur de Valorisation des Urgences</h1>", unsafe_allow_html=True)
 
 st.markdown("""
 <div style='text-align: center;'>
-Ce simulateur permet d’estimer les <strong>gains financiers potentiels</strong> issus d’une meilleure valorisation des passages aux urgences optimisés par Sclépios I.A.
-<br><br>
+Ce simulateur permet d’estimer les <strong>gains financiers potentiels</strong> issus d’une meilleure valorisation des passages aux urgences optimisés par Sclépios I.A.<br><br>
 ✔️ Avis spécialisés  &nbsp;&nbsp;&nbsp;✔️ CCMU 2+ et 3+  &nbsp;&nbsp;&nbsp;✔️ UHCD mono-RUM valorisables
 </div>
 """, unsafe_allow_html=True)
@@ -87,7 +91,6 @@ gains = [
     round(uhcd_valorisation_bonus, 2)
 ]
 
-# Ne pas afficher la ligne UHCD (base) si le taux cible = taux actuel
 if taux_uhcd_actuel == taux_uhcd_cible:
     labels.pop(3)
     volumes.pop(3)
@@ -103,7 +106,6 @@ data = pd.DataFrame({
 st.subheader("📋 Résumé des estimations")
 st.dataframe(data.set_index("Levier"), use_container_width=True)
 
-# Graphique interactif moderne avec Plotly
 fig = px.bar(
     data,
     x="Gain total estimé (€)",
@@ -133,14 +135,16 @@ st.plotly_chart(fig, use_container_width=True)
 
 st.markdown(f"<h3 style='text-align: center;'>💰 Valorisation totale estimée : <strong>{total_gain:,.2f} €</strong></h3>", unsafe_allow_html=True)
 
-# Export PDF
-st.markdown("---")
-
+# Export PDF centré
+st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
 if st.button("📄 Exporter en PDF"):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    pdf.image("logo_complet.png", x=80, w=50)
+    try:
+        pdf.image(logo_path, x=80, w=50)
+    except:
+        pass
     pdf.ln(20)
     pdf.set_font("Arial", 'B', 14)
     pdf.cell(0, 10, "Résumé des Estimations - Sclépios I.A.", ln=True, align='C')
@@ -153,11 +157,11 @@ if st.button("📄 Exporter en PDF"):
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(0, 10, f"Valorisation totale estimée : {total_gain:,.2f} €", ln=True)
 
-    # Sauvegarder en mémoire
     pdf_output = pdf.output(dest='S').encode('latin1')
     b64 = base64.b64encode(pdf_output).decode()
     href = f'<a href="data:application/pdf;base64,{b64}" download="simulation_valorisation_sclepios.pdf">📥 Télécharger le PDF</a>'
     st.markdown(href, unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown("""
 ---
