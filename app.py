@@ -1,8 +1,13 @@
-# Simulateur console de valorisation des urgences avec interface interactive (sans Streamlit)
+# Simulateur web Streamlit de valorisation des urgences avec interface interactive
 
+import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.ticker as mtick
+import plotly.express as px
+
+st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wide")
+
+# Logo de Sclépios I.A.
+st.image("logo_complet.png", width=250)
 
 # Paramètres modifiables
 nb_passages = 40000
