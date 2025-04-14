@@ -43,7 +43,8 @@ nb_uhcd_actuel = (taux_uhcd_actuel / 100) * nb_passages
 nb_uhcd_cible = (taux_uhcd_cible / 100) * nb_passages
 nb_uhcd_nouveaux = max(0, nb_uhcd_cible - nb_uhcd_actuel)
 
-nb_uhcd_mono_rum_total = nb_uhcd_cible * (taux_mono_rum / 100)  # Tous les mono-RUM valorisables
+nb_uhcd_mono_rum_cible = nb_uhcd_cible * (taux_mono_rum / 100)
+nb_uhcd_mono_rum_nouveaux = nb_uhcd_nouveaux * (taux_mono_rum / 100)
 cs_ext = nb_passages - nb_uhcd_actuel
 
 nb_avis_spe = 0.07 * cs_ext
@@ -54,36 +55,46 @@ nb_ccmu3 = 0.03 * cs_ext
 gain_avis_spe = nb_avis_spe * TARIF_AVIS_SPE
 gain_ccmu2 = nb_ccmu2 * TARIF_CCMU2
 gain_ccmu3 = nb_ccmu3 * TARIF_CCMU3
-
-uhcd_valorisation_base = nb_uhcd_mono_rum_total * TARIF_UHCD
-uhcd_valorisation_bonus = nb_uhcd_mono_rum_total * BONUS_MONORUM
+uhcd_valorisation_base = nb_uhcd_mono_rum_nouveaux * TARIF_UHCD
+uhcd_valorisation_bonus = nb_uhcd_mono_rum_cible * BONUS_MONORUM
 
 gain_uhcd_total = uhcd_valorisation_base + uhcd_valorisation_bonus
 total_gain = gain_avis_spe + gain_ccmu2 + gain_ccmu3 + gain_uhcd_total
 
 # Construction du DataFrame
+labels = [
+    "Avis spécialisés",
+    "CCMU 2+",
+    "CCMU 3+",
+    "UHCD mono-RUM (base)",
+    "Majoration 5% UHCD mono-RUM"
+]
+volumes = [
+    int(nb_avis_spe),
+    int(nb_ccmu2),
+    int(nb_ccmu3),
+    int(nb_uhcd_mono_rum_nouveaux),
+    int(nb_uhcd_mono_rum_cible)
+]
+gains = [
+    round(gain_avis_spe, 2),
+    round(gain_ccmu2, 2),
+    round(gain_ccmu3, 2),
+    round(uhcd_valorisation_base, 2),
+    round(uhcd_valorisation_bonus, 2)
+]
+
+# Ne pas afficher la ligne UHCD (base) si le taux cible = taux actuel
+if taux_uhcd_actuel == taux_uhcd_cible:
+    labels.pop(3)
+    volumes.pop(3)
+    gains.pop(3)
+
+# Mise en forme du DataFrame
 data = pd.DataFrame({
-    "Levier": [
-        "Avis spécialisés",
-        "CCMU 2+",
-        "CCMU 3+",
-        "UHCD mono-RUM (base)",
-        "Majoration 5% UHCD mono-RUM"
-    ],
-    "Volume estimé": [
-        int(nb_avis_spe),
-        int(nb_ccmu2),
-        int(nb_ccmu3),
-        int(nb_uhcd_mono_rum_total),
-        int(nb_uhcd_mono_rum_total)
-    ],
-    "Gain total estimé (€)": [
-        round(gain_avis_spe, 2),
-        round(gain_ccmu2, 2),
-        round(gain_ccmu3, 2),
-        round(uhcd_valorisation_base, 2),
-        round(uhcd_valorisation_bonus, 2)
-    ]
+    "Levier": labels,
+    "Volume estimé": volumes,
+    "Gain total estimé (€)": gains
 })
 
 st.subheader("📋 Résumé des estimations")
