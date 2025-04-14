@@ -3,25 +3,28 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from fpdf import FPDF
+import base64
 
 st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wide")
 
-# Logo
-st.image("logo_complet.png", width=250)
+# Logo centré
+st.markdown("<div style='text-align: center;'><img src='logo_complet.png' width='250'></div>", unsafe_allow_html=True)
 
-st.title("📊 Simulateur de Valorisation des Urgences")
+st.markdown("<h1 style='text-align: center;'>📊 Simulateur de Valorisation des Urgences</h1>", unsafe_allow_html=True)
+
 st.markdown("""
-Ce simulateur permet d’estimer les **gains financiers potentiels** issus d’une meilleure valorisation des passages aux urgences optimisés par Sclépios I.A.
-
-- Avis spécialisés
-- CCMU 2+ et 3+
-- UHCD mono-RUM valorisables
-""")
+<div style='text-align: center;'>
+Ce simulateur permet d’estimer les <strong>gains financiers potentiels</strong> issus d’une meilleure valorisation des passages aux urgences optimisés par Sclépios I.A.
+<br><br>
+✔️ Avis spécialisés  &nbsp;&nbsp;&nbsp;✔️ CCMU 2+ et 3+  &nbsp;&nbsp;&nbsp;✔️ UHCD mono-RUM valorisables
+</div>
+""", unsafe_allow_html=True)
 
 # Interface Streamlit
 col1, col2, col3 = st.columns(3)
 with col1:
-    nb_passages = st.slider("Nombre total de passages aux urgences", 10000, 200000, 40000, step=1000)
+    nb_passages = st.slider("Nombre total de passages aux urgences", 10000, 100000, 40000, step=1000)
 with col2:
     taux_uhcd_actuel = st.slider("Taux actuel d’UHCD (%)", 0, 30, 5)
 with col3:
@@ -29,7 +32,7 @@ with col3:
 
 col4, _ = st.columns(2)
 with col4:
-    taux_mono_rum = st.slider("Proportion des UHCD mono-RUM (%)", 0, 100, 45)
+    taux_mono_rum = st.slider("Proportion des UHCD mono-RUM (%)", 0, 100, 70)
 
 # Constantes tarifaires
 TARIF_AVIS_SPE = 24.56
@@ -128,9 +131,35 @@ fig.update_layout(
 
 st.plotly_chart(fig, use_container_width=True)
 
-st.markdown(f"### 💰 Valorisation totale estimée : **{total_gain:,.2f} €**")
+st.markdown(f"<h3 style='text-align: center;'>💰 Valorisation totale estimée : <strong>{total_gain:,.2f} €</strong></h3>", unsafe_allow_html=True)
+
+# Export PDF
+st.markdown("---")
+
+if st.button("📄 Exporter en PDF"):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.image("logo_complet.png", x=80, w=50)
+    pdf.ln(20)
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(0, 10, "Résumé des Estimations - Sclépios I.A.", ln=True, align='C')
+    pdf.set_font("Arial", size=11)
+
+    for index, row in data.iterrows():
+        pdf.cell(0, 10, f"{index}: {row['Volume estimé']} - {row['Gain total estimé (€)']:.2f} €", ln=True)
+
+    pdf.ln(10)
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, f"Valorisation totale estimée : {total_gain:,.2f} €", ln=True)
+
+    # Sauvegarder en mémoire
+    pdf_output = pdf.output(dest='S').encode('latin1')
+    b64 = base64.b64encode(pdf_output).decode()
+    href = f'<a href="data:application/pdf;base64,{b64}" download="simulation_valorisation_sclepios.pdf">📥 Télécharger le PDF</a>'
+    st.markdown(href, unsafe_allow_html=True)
 
 st.markdown("""
 ---
-Développé par **Sclépios I.A.** pour révéler la valeur cachée des données médicales.
-""")
+<div style='text-align: center;'>Développé par <strong>Sclépios I.A.</strong> pour révéler la valeur cachée des données médicales.</div>
+""", unsafe_allow_html=True)
