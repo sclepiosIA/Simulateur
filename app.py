@@ -1,13 +1,30 @@
-# Simulateur console amélioré de valorisation des urgences (version sans Streamlit)
+# Simulateur web Streamlit de valorisation des urgences avec interface interactive
 
+import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.ticker as mtick
- 
-# Paramètres modifiables
-nb_passages = 40000
+import plotly.express as px
+
+st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wide")
+
+# Logo de Sclépios I.A.
+st.image("https://www.sclepios-ia.com/wp-content/uploads/2024/03/logo_SclepiosIA_complet.png", width=250)
+
+st.title("📊 Simulateur de Valorisation des Urgences")
+st.markdown("""
+Ce simulateur permet d’estimer les **gains financiers potentiels** issus d’une meilleure valorisation des passages aux urgences :
+- Avis spécialisés
+- Cotation CCMU 2+ et 3+
+- Valorisation des séjours UHCD
+""")
+
+# Interface utilisateur
+col1, col2 = st.columns(2)
+with col1:
+    nb_passages = st.slider("Nombre total de passages aux urgences", 10000, 100000, 40000, step=1000)
+with col2:
+    taux_uhcd_global = st.slider("Taux global d’orientation vers l’UHCD (%)", 0, 30, 8)
+
 cs_ext = int(nb_passages * 0.8)
-taux_uhcd_global = 8  # Taux total de passages orientés vers l’UHCD (%)
 
 # Tarification unitaire des postes
 TARIF_AVIS_SPE = 24.56
@@ -29,37 +46,46 @@ gain_uhcd = nb_uhcd * TARIF_UHCD
 total_gain = gain_avis_spe + gain_ccmu2 + gain_ccmu3 + gain_uhcd
 
 # Création du tableau de résultats
-data = {
-    "Levier": ["Avis spécialisés (7%)", "CCMU 2+ (3%)", "CCMU 3+ (3%)", "UHCD"],
+data = pd.DataFrame({
+    "Levier": ["Avis spécialisés", "CCMU 2+", "CCMU 3+", "UHCD"],
     "Volume estimé": [int(nb_avis_spe), int(nb_ccmu2), int(nb_ccmu3), int(nb_uhcd)],
-    "Gain estimé (€)": [
+    "Gain total estimé (€)": [
         round(gain_avis_spe, 2),
         round(gain_ccmu2, 2),
         round(gain_ccmu3, 2),
         round(gain_uhcd, 2)
     ]
-}
-results = pd.DataFrame(data)
+})
 
-# Affichage texte
-print("\n=== Résumé de la valorisation estimée ===")
-print(results.to_string(index=False))
-print(f"\n💰 Valorisation totale estimée : {round(total_gain, 2):,.2f} €")
+st.subheader("📋 Résumé des estimations")
+st.dataframe(data.set_index("Levier"), use_container_width=True)
 
-# Graphique amélioré
-fig, ax = plt.subplots(figsize=(10, 6))
-bars = ax.barh(results["Levier"], results["Gain estimé (€)"], color=['#4ba3c7', '#8ac6d1', '#c3e0e5', '#92b4ec'])
+# Graphique interactif
+fig = px.bar(
+    data,
+    x="Gain total estimé (€)",
+    y="Levier",
+    orientation="h",
+    text="Gain total estimé (€)",
+    color="Levier",
+    color_discrete_sequence=px.colors.qualitative.Set2,
+    title="Impact financier total par levier de valorisation"
+)
+fig.update_traces(texttemplate='%{text:,.0f} €', textposition='outside')
+fig.update_layout(
+    xaxis_title="Montant total estimé (€)",
+    yaxis_title="",
+    plot_bgcolor="#f9f9f9",
+    paper_bgcolor="#f9f9f9",
+    font=dict(size=14),
+    transition_duration=500
+)
 
-# Ajout des valeurs sur les barres
-for bar in bars:
-    width = bar.get_width()
-    ax.text(width + 1000, bar.get_y() + bar.get_height() / 2, f"{int(width):,} €", va='center', fontsize=10)
+st.plotly_chart(fig, use_container_width=True)
 
-ax.set_xlabel("Gain total en euros")
-ax.set_title("💶 Impact financier total par levier de valorisation")
-ax.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x, _: f'{int(x):,} €'))
-plt.tight_layout()
-plt.grid(axis='x', linestyle='--', alpha=0.4)
-plt.show()
+st.markdown(f"### 💰 Valorisation totale estimée : **{total_gain:,.2f} €**")
 
-print("\nDéveloppé par Sclépios I.A. pour valoriser la donnée médicale aux urgences.")
+st.markdown("""
+---
+Développé par **Sclépios I.A.** pour révéler la valeur cachée des données médicales.
+""")
