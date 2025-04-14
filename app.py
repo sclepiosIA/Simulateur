@@ -9,14 +9,13 @@ import os
 import tempfile
 
 st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wide")
-
 st.markdown("<br><h1 style='text-align: center;'>📊 Simulateur de Valorisation des Urgences</h1><br>", unsafe_allow_html=True)
-
 st.markdown("""
 <div style='text-align: center;'>
 Ce simulateur permet d’estimer les <strong>gains financiers potentiels</strong> issus d’une meilleure valorisation des passages aux urgences optimisés par Sclépios I.A.<br><br>
 ✔️ Avis spécialisés  &nbsp;&nbsp;&nbsp;✔️ CCMU 2+ et 3+  &nbsp;&nbsp;&nbsp;✔️ UHCD mono-RUM valorisables
 </div>
+<br>
 <br>
 """, unsafe_allow_html=True)
 
