@@ -7,7 +7,7 @@ import plotly.express as px
 st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wide")
 
 # Logo de Sclépios I.A.
-st.image("https://www.sclepios-ia.com/wp-content/uploads/2024/03/logo_SclepiosIA_complet.png", width=250)
+st.image("logo_complet.png", width=250)
 
 st.title("📊 Simulateur de Valorisation des Urgences")
 st.markdown("""
