@@ -29,7 +29,7 @@ with col3:
 
 col4, _ = st.columns(2)
 with col4:
-    taux_mono_rum = st.slider("Proportion des UHCD mono-RUM (%)", 0, 100, 70)
+    taux_mono_rum = st.slider("Proportion des UHCD mono-RUM (%)", 0, 100, 65)
 
 
 
