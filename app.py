@@ -2,12 +2,11 @@
 
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.ticker as mtick
+import plotly.express as px
 
 st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wide")
 
-# Logo de Sclépios I.A.
+# Logo
 st.image("logo_complet.png", width=250)
 
 st.title("📊 Simulateur de Valorisation des Urgences")
@@ -43,7 +42,8 @@ BONUS_MONORUM = 0.05 * TARIF_UHCD
 nb_uhcd_actuel = (taux_uhcd_actuel / 100) * nb_passages
 nb_uhcd_cible = (taux_uhcd_cible / 100) * nb_passages
 nb_uhcd_nouveaux = max(0, nb_uhcd_cible - nb_uhcd_actuel)
-nb_uhcd_mono_rum_nouveaux = nb_uhcd_nouveaux * (taux_mono_rum / 100)
+
+nb_uhcd_mono_rum_total = nb_uhcd_cible * (taux_mono_rum / 100)  # Tous les mono-RUM valorisables
 cs_ext = nb_passages - nb_uhcd_actuel
 
 nb_avis_spe = 0.07 * cs_ext
@@ -54,45 +54,68 @@ nb_ccmu3 = 0.03 * cs_ext
 gain_avis_spe = nb_avis_spe * TARIF_AVIS_SPE
 gain_ccmu2 = nb_ccmu2 * TARIF_CCMU2
 gain_ccmu3 = nb_ccmu3 * TARIF_CCMU3
-uhcd_valorisation_base = nb_uhcd_mono_rum_nouveaux * TARIF_UHCD
-uhcd_valorisation_bonus = nb_uhcd_mono_rum_nouveaux * BONUS_MONORUM
+
+uhcd_valorisation_base = nb_uhcd_mono_rum_total * TARIF_UHCD
+uhcd_valorisation_bonus = nb_uhcd_mono_rum_total * BONUS_MONORUM
 
 gain_uhcd_total = uhcd_valorisation_base + uhcd_valorisation_bonus
 total_gain = gain_avis_spe + gain_ccmu2 + gain_ccmu3 + gain_uhcd_total
 
 # Construction du DataFrame
 data = pd.DataFrame({
-    "Levier": ["Avis spécialisés", "CCMU 2+", "CCMU 3+"],
-    "Volume estimé": [int(nb_avis_spe), int(nb_ccmu2), int(nb_ccmu3)],
-    "Gain total estimé (€)": [round(gain_avis_spe, 2), round(gain_ccmu2, 2), round(gain_ccmu3, 2)]
+    "Levier": [
+        "Avis spécialisés",
+        "CCMU 2+",
+        "CCMU 3+",
+        "UHCD mono-RUM (base)",
+        "Majoration 5% UHCD mono-RUM"
+    ],
+    "Volume estimé": [
+        int(nb_avis_spe),
+        int(nb_ccmu2),
+        int(nb_ccmu3),
+        int(nb_uhcd_mono_rum_total),
+        int(nb_uhcd_mono_rum_total)
+    ],
+    "Gain total estimé (€)": [
+        round(gain_avis_spe, 2),
+        round(gain_ccmu2, 2),
+        round(gain_ccmu3, 2),
+        round(uhcd_valorisation_base, 2),
+        round(uhcd_valorisation_bonus, 2)
+    ]
 })
-
-if nb_uhcd_mono_rum_nouveaux > 0:
-    data = pd.concat([
-        data,
-        pd.DataFrame({
-            "Levier": ["UHCD mono-RUM (base)", "Majoration 5% UHCD mono-RUM"],
-            "Volume estimé": [int(nb_uhcd_mono_rum_nouveaux)] * 2,
-            "Gain total estimé (€)": [round(uhcd_valorisation_base, 2), round(uhcd_valorisation_bonus, 2)]
-        })
-    ], ignore_index=True)
 
 st.subheader("📋 Résumé des estimations")
 st.dataframe(data.set_index("Levier"), use_container_width=True)
 
-# Graphique
-fig, ax = plt.subplots(figsize=(10, 6))
-bars = ax.barh(data["Levier"], data["Gain total estimé (€)"], color='teal')
-for bar in bars:
-    width = bar.get_width()
-    ax.text(width + 1000, bar.get_y() + bar.get_height()/2, f"{int(width):,} €", va='center')
+# Graphique interactif moderne avec Plotly
+fig = px.bar(
+    data,
+    x="Gain total estimé (€)",
+    y="Levier",
+    orientation="h",
+    text="Gain total estimé (€)",
+    color="Levier",
+    color_discrete_sequence=px.colors.qualitative.Set3,
+    title="Impact financier des leviers optimisés par Sclépios I.A."
+)
+fig.update_traces(
+    texttemplate='%{text:,.0f} €',
+    textposition='outside',
+    hovertemplate='<b>%{y}</b><br>Gain : %{x:,.0f} €<extra></extra>'
+)
+fig.update_layout(
+    xaxis_title="Montant estimé (€)",
+    yaxis_title="",
+    plot_bgcolor="#f5f5f5",
+    paper_bgcolor="#ffffff",
+    font=dict(size=14),
+    transition_duration=500,
+    height=500
+)
 
-ax.set_xlabel("Montant estimé (€)")
-ax.set_title("Impact financier des leviers optimisés par Sclépios I.A.")
-ax.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x, _: f'{int(x):,} €'))
-plt.grid(axis='x', linestyle='--', alpha=0.5)
-plt.tight_layout()
-st.pyplot(fig)
+st.plotly_chart(fig, use_container_width=True)
 
 st.markdown(f"### 💰 Valorisation totale estimée : **{total_gain:,.2f} €**")
 
