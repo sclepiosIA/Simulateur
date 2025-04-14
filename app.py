@@ -31,10 +31,12 @@ col4, _ = st.columns(2)
 with col4:
     taux_mono_rum = st.slider("Proportion des UHCD mono-RUM (%)", 0, 100, 70)
 
-st.markdown(f"<h4 style='text-align:center;'>📈 Taux d’UHCD mono-RUM</h4>", unsafe_allow_html=True)
-uhcd_mono_rum_init = (nb_uhcd_actuel * (taux_mono_rum / 100)) / nb_passages * 100
-uhcd_mono_rum_cible = (nb_uhcd_cible * (taux_mono_rum / 100)) / nb_passages * 100
-st.markdown(f"<div style='text-align: center;'>Taux initial : <strong>{uhcd_mono_rum_init:.2f}%</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Taux cible : <strong>{uhcd_mono_rum_cible:.2f}%</strong></div><br>", unsafe_allow_html=True)
+
+
+# Calculs taux mono-RUM
+uhcd_mono_rum_init = (taux_uhcd_actuel * taux_mono_rum) / 100
+uhcd_mono_rum_cible = (taux_uhcd_cible * taux_mono_rum) / 100
+st.markdown(f"<br><div style='text-align: center; font-size: 18px;'><b>📈 Taux UHCD mono-RUM sur le total des passages :</b><br>Taux initial : <strong>{uhcd_mono_rum_init:.2f}%</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Taux cible : <strong>{uhcd_mono_rum_cible:.2f}%</strong></div><br>", unsafe_allow_html=True)
 
 # Constantes tarifaires
 TARIF_AVIS_SPE = 24.56
