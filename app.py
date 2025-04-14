@@ -9,7 +9,7 @@ import os
 import tempfile
 
 st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wide")
-st.markdown(f"<img src='{logo_path}' width='250'></div>", unsafe_allow_html=True)
+st.markdown("<img src='logo_complet.png' width='250'></div>", unsafe_allow_html=True)
 
 st.markdown("<br><h1 style='text-align: center;'>📊 Simulateur de Valorisation des Urgences</h1><br>", unsafe_allow_html=True)
 
