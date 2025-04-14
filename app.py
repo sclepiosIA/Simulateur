@@ -1,91 +1,93 @@
-# Simulateur web Streamlit de valorisation des urgences avec interface interactive
+# Simulateur console de valorisation des urgences avec interface interactive (sans Streamlit)
 
-import streamlit as st
 import pandas as pd
-import plotly.express as px
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 
-st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wide")
-
-# Logo de Sclépios I.A.
-st.image("logo_complet.png", width=250)
-
-st.title("📊 Simulateur de Valorisation des Urgences")
-st.markdown("""
-Ce simulateur permet d’estimer les **gains financiers potentiels** issus d’une meilleure valorisation des passages aux urgences :
-- Avis spécialisés
-- Cotation CCMU 2+ et 3+
-- Valorisation des séjours UHCD
-""")
-
-# Interface utilisateur
-col1, col2 = st.columns(2)
-with col1:
-    nb_passages = st.slider("Nombre total de passages aux urgences", 10000, 100000, 40000, step=1000)
-with col2:
-    taux_uhcd_global = st.slider("Augmentation du Taux d'UHCD (%)", 0, 10, 2)
-
-cs_ext = int(nb_passages * 0.8)
-
-# Tarification unitaire des postes
+# Paramètres modifiables
+nb_passages = 40000
 TARIF_AVIS_SPE = 24.56
 TARIF_CCMU2 = 14.53
 TARIF_CCMU3 = 19.38
 TARIF_UHCD = 400
+BONUS_MONORUM = 0.05 * TARIF_UHCD
 
-# Calcul des volumes estimés
+# Valeurs par défaut utilisateur
+taux_uhcd_actuel = 5
+taux_uhcd_cible = 8
+taux_mono_rum = 70
+
+# Calculs dérivés
+nb_uhcd_actuel = (taux_uhcd_actuel / 100) * nb_passages
+nb_uhcd_cible = (taux_uhcd_cible / 100) * nb_passages
+nb_uhcd_nouveaux = nb_uhcd_cible - nb_uhcd_actuel
+
+nb_uhcd_mono_rum_actuel = nb_uhcd_actuel * (taux_mono_rum / 100)
+nb_uhcd_mono_rum_nouveaux = nb_uhcd_nouveaux * (taux_mono_rum / 100)
+nb_uhcd_mono_rum_total = nb_uhcd_mono_rum_actuel + nb_uhcd_mono_rum_nouveaux
+
+# Déduire le nombre de consultations externes (hors UHCD mono-RUM)
+cs_ext = nb_passages - nb_uhcd_actuel
+
+# Volumes estimés
 nb_avis_spe = 0.07 * cs_ext
 nb_ccmu2 = 0.03 * cs_ext
 nb_ccmu3 = 0.03 * cs_ext
-nb_uhcd = (taux_uhcd_global / 100) * nb_passages
 
-# Calcul des gains totaux
+# Gains standards
 gain_avis_spe = nb_avis_spe * TARIF_AVIS_SPE
 gain_ccmu2 = nb_ccmu2 * TARIF_CCMU2
 gain_ccmu3 = nb_ccmu3 * TARIF_CCMU3
-gain_uhcd = nb_uhcd * TARIF_UHCD
-total_gain = gain_avis_spe + gain_ccmu2 + gain_ccmu3 + gain_uhcd
 
-# Création du tableau de résultats
+# Détail UHCD : distinguer gain par valorisation de base vs gain issu du bonus
+uhcd_valorisation_base = (nb_uhcd_mono_rum_actuel + nb_uhcd_mono_rum_nouveaux) * TARIF_UHCD
+uhcd_valorisation_bonus = (nb_uhcd_mono_rum_actuel + nb_uhcd_mono_rum_nouveaux) * BONUS_MONORUM
+
+gain_uhcd_total = uhcd_valorisation_base + uhcd_valorisation_bonus
+total_gain = gain_avis_spe + gain_ccmu2 + gain_ccmu3 + gain_uhcd_total
+
+# Affichage tableau
 data = pd.DataFrame({
-    "Levier": ["Avis spécialisés", "CCMU 2+", "CCMU 3+", "UHCD"],
-    "Volume estimé": [int(nb_avis_spe), int(nb_ccmu2), int(nb_ccmu3), int(nb_uhcd)],
+    "Levier": [
+        "Avis spécialisés", 
+        "CCMU 2+", 
+        "CCMU 3+", 
+        "UHCD mono-RUM (base)",
+        "Majoration 5% UHCD mono-RUM"
+    ],
+    "Volume estimé": [
+        int(nb_avis_spe), 
+        int(nb_ccmu2), 
+        int(nb_ccmu3), 
+        int(nb_uhcd_mono_rum_total),
+        int(nb_uhcd_mono_rum_total)
+    ],
     "Gain total estimé (€)": [
         round(gain_avis_spe, 2),
         round(gain_ccmu2, 2),
         round(gain_ccmu3, 2),
-        round(gain_uhcd, 2)
+        round(uhcd_valorisation_base, 2),
+        round(uhcd_valorisation_bonus, 2)
     ]
 })
 
-st.subheader("📋 Résumé des estimations")
-st.dataframe(data.set_index("Levier"), use_container_width=True)
+print("\n=== Résumé des estimations de valorisation ===")
+print(data.to_string(index=False))
+print(f"\n💰 Valorisation totale estimée : {total_gain:,.2f} €")
 
-# Graphique interactif
-fig = px.bar(
-    data,
-    x="Gain total estimé (€)",
-    y="Levier",
-    orientation="h",
-    text="Gain total estimé (€)",
-    color="Levier",
-    color_discrete_sequence=px.colors.qualitative.Set2,
-    title="Impact financier total par levier de valorisation"
-)
-fig.update_traces(texttemplate='%{text:,.0f} €', textposition='outside')
-fig.update_layout(
-    xaxis_title="Montant total estimé (€)",
-    yaxis_title="",
-    plot_bgcolor="#f9f9f9",
-    paper_bgcolor="#f9f9f9",
-    font=dict(size=14),
-    transition_duration=500
-)
+# Graphique matplotlib
+fig, ax = plt.subplots(figsize=(10, 6))
+bars = ax.barh(data["Levier"], data["Gain total estimé (€)"], color=['#4ba3c7', '#8ac6d1', '#c3e0e5', '#6a9fb5', '#1d3557'])
 
-st.plotly_chart(fig, use_container_width=True)
+for bar in bars:
+    width = bar.get_width()
+    ax.text(width + 1000, bar.get_y() + bar.get_height() / 2, f"{int(width):,} €", va='center', fontsize=10)
 
-st.markdown(f"### 💰 Valorisation totale estimée : **{total_gain:,.2f} €**")
+ax.set_xlabel("Gain en euros")
+ax.set_title("Impact financier total par levier de valorisation")
+ax.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x, _: f'{int(x):,} €'))
+plt.tight_layout()
+plt.grid(axis='x', linestyle='--', alpha=0.4)
+plt.show()
 
-st.markdown("""
----
-Développé par **Sclépios I.A.** pour révéler la valeur cachée des données médicales.
-""")
+print("\nDéveloppé par Sclépios I.A. pour révéler la valeur cachée des données médicales.")
