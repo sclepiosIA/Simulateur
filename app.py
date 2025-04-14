@@ -5,15 +5,18 @@ import pandas as pd
 import plotly.express as px
 
 st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wide")
-st.markdown("<br><h1 style='text-align: center;'>📊 Simulateur de Valorisation des Urgences</h1><br>", unsafe_allow_html=True)
+
+# Logo
+st.image("logo_complet.png", width=250)
+
+st.title("📊 Simulateur de Valorisation des Urgences")
 st.markdown("""
-<div style='text-align: center;'>
-Ce simulateur permet d’estimer les <strong>gains financiers potentiels</strong> issus d’une meilleure valorisation des passages aux urgences optimisés par Sclépios I.A.<br><br>
-✔️ Avis spécialisés  &nbsp;&nbsp;&nbsp;✔️ CCMU 2+ et 3+  &nbsp;&nbsp;&nbsp;✔️ UHCD mono-RUM valorisables
-</div>
-<br>
-<br>
-""", unsafe_allow_html=True)
+Ce simulateur permet d’estimer les **gains financiers potentiels** issus d’une meilleure valorisation des passages aux urgences optimisés par Sclépios I.A.
+
+- Avis spécialisés
+- CCMU 2+ et 3+
+- UHCD mono-RUM valorisables
+""")
 
 # Interface Streamlit
 col1, col2, col3 = st.columns(3)
@@ -81,6 +84,7 @@ gains = [
     round(uhcd_valorisation_bonus, 2)
 ]
 
+# Ne pas afficher la ligne UHCD (base) si le taux cible = taux actuel
 if taux_uhcd_actuel == taux_uhcd_cible:
     labels.pop(3)
     volumes.pop(3)
@@ -96,6 +100,7 @@ data = pd.DataFrame({
 st.subheader("📋 Résumé des estimations")
 st.dataframe(data.set_index("Levier"), use_container_width=True)
 
+# Graphique interactif moderne avec Plotly
 fig = px.bar(
     data,
     x="Gain total estimé (€)",
@@ -123,10 +128,9 @@ fig.update_layout(
 
 st.plotly_chart(fig, use_container_width=True)
 
-st.markdown(f"<h3 style='text-align: center;'>💰 Valorisation totale estimée : <strong>{total_gain:,.2f} €</strong></h3>", unsafe_allow_html=True)
-
+st.markdown(f"### 💰 Valorisation totale estimée : **{total_gain:,.2f} €**")
 
 st.markdown("""
 ---
-<div style='text-align: center;'>Développé par <strong>Sclépios I.A.</strong> pour révéler la valeur cachée des données médicales.</div>
-""", unsafe_allow_html=True)
+Développé par **Sclépios I.A.** pour révéler la valeur cachée des données médicales.
+""")
