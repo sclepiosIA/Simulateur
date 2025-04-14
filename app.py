@@ -21,7 +21,7 @@ Ce simulateur permet d’estimer les **gains financiers potentiels** issus d’u
 # Interface Streamlit
 col1, col2, col3 = st.columns(3)
 with col1:
-    nb_passages = st.slider("Nombre total de passages aux urgences", 10000, 100000, 40000, step=1000)
+    nb_passages = st.slider("Nombre total de passages aux urgences", 10000, 300000, 40000, step=500)
 with col2:
     taux_uhcd_actuel = st.slider("Taux actuel d’UHCD (%)", 0, 30, 5)
 with col3:
