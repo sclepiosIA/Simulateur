@@ -6,6 +6,7 @@ import plotly.express as px
 from fpdf import FPDF
 import base64
 import os
+import tempfile
 
 st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wide")
 
@@ -16,13 +17,14 @@ if os.path.exists(logo_path):
 else:
     st.markdown("<div style='text-align: center;'><img src='https://www.sclepios-ia.com/wp-content/uploads/2024/03/logo_SclepiosIA_complet.png' width='250'></div>", unsafe_allow_html=True)
 
-st.markdown("<h1 style='text-align: center;'>📊 Simulateur de Valorisation des Urgences</h1>", unsafe_allow_html=True)
+st.markdown("<br><h1 style='text-align: center;'>📊 Simulateur de Valorisation des Urgences</h1><br>", unsafe_allow_html=True)
 
 st.markdown("""
 <div style='text-align: center;'>
 Ce simulateur permet d’estimer les <strong>gains financiers potentiels</strong> issus d’une meilleure valorisation des passages aux urgences optimisés par Sclépios I.A.<br><br>
 ✔️ Avis spécialisés  &nbsp;&nbsp;&nbsp;✔️ CCMU 2+ et 3+  &nbsp;&nbsp;&nbsp;✔️ UHCD mono-RUM valorisables
 </div>
+<br>
 """, unsafe_allow_html=True)
 
 # Interface Streamlit
@@ -135,14 +137,18 @@ st.plotly_chart(fig, use_container_width=True)
 
 st.markdown(f"<h3 style='text-align: center;'>💰 Valorisation totale estimée : <strong>{total_gain:,.2f} €</strong></h3>", unsafe_allow_html=True)
 
-# Export PDF centré
-st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
-if st.button("📄 Exporter en PDF"):
+# Export PDF centré et fonctionnel
+st.markdown("<br><div style='text-align: center;'>", unsafe_allow_html=True)
+export_button = st.button("📄 Exporter en PDF")
+st.markdown("</div><br>", unsafe_allow_html=True)
+
+if export_button:
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
     try:
-        pdf.image(logo_path, x=80, w=50)
+        if os.path.exists(logo_path):
+            pdf.image(logo_path, x=80, w=50)
     except:
         pass
     pdf.ln(20)
@@ -157,11 +163,11 @@ if st.button("📄 Exporter en PDF"):
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(0, 10, f"Valorisation totale estimée : {total_gain:,.2f} €", ln=True)
 
-    pdf_output = pdf.output(dest='S').encode('latin1')
-    b64 = base64.b64encode(pdf_output).decode()
-    href = f'<a href="data:application/pdf;base64,{b64}" download="simulation_valorisation_sclepios.pdf">📥 Télécharger le PDF</a>'
-    st.markdown(href, unsafe_allow_html=True)
-st.markdown("</div>", unsafe_allow_html=True)
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+        pdf.output(tmp_file.name)
+        with open(tmp_file.name, "rb") as file:
+            b64_pdf = base64.b64encode(file.read()).decode()
+            st.markdown(f'<a href="data:application/pdf;base64,{b64_pdf}" download="simulation_valorisation_sclepios.pdf">📥 Télécharger le PDF</a>', unsafe_allow_html=True)
 
 st.markdown("""
 ---
