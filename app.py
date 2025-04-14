@@ -9,7 +9,6 @@ st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wi
 # Logo de Sclépios I.A.
 st.image("logo_complet.png", width=250)
 
-
 st.title("📊 Simulateur de Valorisation des Urgences")
 st.markdown("""
 Ce simulateur permet d’estimer les **gains financiers potentiels** issus d’une meilleure valorisation des passages aux urgences :
@@ -38,15 +37,12 @@ TARIF_CCMU3 = 19.38
 TARIF_UHCD = 400
 BONUS_MONORUM = 0.05 * TARIF_UHCD
 
-# Calculs UHCD
+# Calculs
 nb_uhcd_actuel = (taux_uhcd_actuel / 100) * nb_passages
 nb_uhcd_cible = (taux_uhcd_cible / 100) * nb_passages
 nb_uhcd_nouveaux = nb_uhcd_cible - nb_uhcd_actuel
 
-nb_uhcd_mono_rum_actuel = nb_uhcd_actuel * (taux_mono_rum / 100)
 nb_uhcd_mono_rum_nouveaux = nb_uhcd_nouveaux * (taux_mono_rum / 100)
-nb_uhcd_mono_rum_total = nb_uhcd_mono_rum_actuel + nb_uhcd_mono_rum_nouveaux
-
 cs_ext = nb_passages - nb_uhcd_actuel
 
 # Volumes
@@ -59,55 +55,71 @@ gain_avis_spe = nb_avis_spe * TARIF_AVIS_SPE
 gain_ccmu2 = nb_ccmu2 * TARIF_CCMU2
 gain_ccmu3 = nb_ccmu3 * TARIF_CCMU3
 
-uhcd_valorisation_base = nb_uhcd_mono_rum_total * TARIF_UHCD
-uhcd_valorisation_bonus = nb_uhcd_mono_rum_total * BONUS_MONORUM
+uhcd_valorisation_base = nb_uhcd_mono_rum_nouveaux * TARIF_UHCD
+uhcd_valorisation_bonus = nb_uhcd_mono_rum_nouveaux * BONUS_MONORUM
 
 gain_uhcd_total = uhcd_valorisation_base + uhcd_valorisation_bonus
 total_gain = gain_avis_spe + gain_ccmu2 + gain_ccmu3 + gain_uhcd_total
 
 # DataFrame
+labels = [
+    "Avis spécialisés", 
+    "CCMU 2+", 
+    "CCMU 3+"
+]
+volumes = [
+    int(nb_avis_spe), 
+    int(nb_ccmu2), 
+    int(nb_ccmu3)
+]
+gains = [
+    round(gain_avis_spe, 2),
+    round(gain_ccmu2, 2),
+    round(gain_ccmu3, 2)
+]
+
+# Ajouter UHCD uniquement si valorisation > 0
+if nb_uhcd_mono_rum_nouveaux > 0:
+    labels.extend(["UHCD mono-RUM (base)", "Majoration 5% UHCD mono-RUM"])
+    volumes.extend([int(nb_uhcd_mono_rum_nouveaux), int(nb_uhcd_mono_rum_nouveaux)])
+    gains.extend([round(uhcd_valorisation_base, 2), round(uhcd_valorisation_bonus, 2)])
+
 data = pd.DataFrame({
-    "Levier": [
-        "Avis spécialisés", 
-        "CCMU 2+", 
-        "CCMU 3+", 
-        "UHCD mono-RUM (base)",
-        "Majoration 5% UHCD mono-RUM"
-    ],
-    "Volume estimé": [
-        int(nb_avis_spe), 
-        int(nb_ccmu2), 
-        int(nb_ccmu3), 
-        int(nb_uhcd_mono_rum_total),
-        int(nb_uhcd_mono_rum_total)
-    ],
-    "Gain total estimé (€)": [
-        round(gain_avis_spe, 2),
-        round(gain_ccmu2, 2),
-        round(gain_ccmu3, 2),
-        round(uhcd_valorisation_base, 2),
-        round(uhcd_valorisation_bonus, 2)
-    ]
+    "Levier": labels,
+    "Volume estimé": volumes,
+    "Gain total estimé (€)": gains
 })
 
 st.subheader("📋 Résumé des estimations")
 st.dataframe(data.set_index("Levier"), use_container_width=True)
 
-# Graphique matplotlib via Streamlit
-fig, ax = plt.subplots(figsize=(10, 6))
-bars = ax.barh(data["Levier"], data["Gain total estimé (€)"], color=['#4ba3c7', '#8ac6d1', '#c3e0e5', '#6a9fb5', '#1d3557'])
+# Graphique interactif avec Plotly
+fig = px.bar(
+    data,
+    x="Gain total estimé (€)",
+    y="Levier",
+    orientation="h",
+    text="Gain total estimé (€)",
+    color="Levier",
+    color_discrete_sequence=px.colors.qualitative.Pastel,
+    title="Impact financier des leviers optimisés par Sclépios I.A."
+)
+fig.update_traces(
+    texttemplate='%{text:,.0f} €',
+    textposition='outside',
+    hovertemplate='<b>%{y}</b><br>Gain : %{x:,.0f} €'
+)
+fig.update_layout(
+    xaxis_title="Montant estimé (€)",
+    yaxis_title="",
+    plot_bgcolor="#f5f5f5",
+    paper_bgcolor="#f5f5f5",
+    font=dict(size=14),
+    transition_duration=500,
+    height=500
+)
 
-for bar in bars:
-    width = bar.get_width()
-    ax.text(width + 1000, bar.get_y() + bar.get_height() / 2, f"{int(width):,} €", va='center', fontsize=10)
-
-ax.set_xlabel("Gain en euros")
-ax.set_title("Impact financier total par levier de valorisation")
-ax.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x, _: f'{int(x):,} €'))
-plt.tight_layout()
-plt.grid(axis='x', linestyle='--', alpha=0.4)
-
-st.pyplot(fig)
+st.plotly_chart(fig, use_container_width=True)
 
 st.markdown(f"### 💰 Valorisation totale estimée : **{total_gain:,.2f} €**")
 
