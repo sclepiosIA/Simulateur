@@ -3,7 +3,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
-
+ 
 # Paramètres modifiables
 nb_passages = 40000
 cs_ext = int(nb_passages * 0.8)
