@@ -5,11 +5,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 
-
- # Logo de Sclépios I.A.
- st.image("logo_complet.png", width=250)
-
 st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wide")
+
+# Logo de Sclépios I.A.
+st.image("logo_complet.png", width=250)
 
 st.title("📊 Simulateur de Valorisation des Urgences")
 st.markdown("""
