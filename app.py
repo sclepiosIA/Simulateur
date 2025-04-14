@@ -22,7 +22,7 @@ col1, col2 = st.columns(2)
 with col1:
     nb_passages = st.slider("Nombre total de passages aux urgences", 10000, 100000, 40000, step=1000)
 with col2:
-    taux_uhcd_global = st.slider("Taux global d’orientation vers l’UHCD (%)", 0, 30, 8)
+    taux_uhcd_global = st.slider("Augmentation du Taux d'UHCD (%)", 0, 10, 2)
 
 cs_ext = int(nb_passages * 0.8)
 
