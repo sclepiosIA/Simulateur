@@ -6,8 +6,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 
 st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wide")
-# Logo de Sclépios I.A.
-st.image("logo_complet.png", width=250)
 
 st.title("📊 Simulateur de Valorisation des Urgences")
 st.markdown("""
@@ -40,7 +38,7 @@ BONUS_MONORUM = 0.05 * TARIF_UHCD
 # Calculs
 nb_uhcd_actuel = (taux_uhcd_actuel / 100) * nb_passages
 nb_uhcd_cible = (taux_uhcd_cible / 100) * nb_passages
-nb_uhcd_nouveaux = nb_uhcd_cible - nb_uhcd_actuel
+nb_uhcd_nouveaux = max(0, nb_uhcd_cible - nb_uhcd_actuel)
 
 nb_uhcd_mono_rum_nouveaux = nb_uhcd_nouveaux * (taux_mono_rum / 100)
 cs_ext = nb_passages - nb_uhcd_actuel
@@ -62,26 +60,13 @@ gain_uhcd_total = uhcd_valorisation_base + uhcd_valorisation_bonus
 total_gain = gain_avis_spe + gain_ccmu2 + gain_ccmu3 + gain_uhcd_total
 
 # DataFrame
-labels = [
-    "Avis spécialisés", 
-    "CCMU 2+", 
-    "CCMU 3+"
-]
-volumes = [
-    int(nb_avis_spe), 
-    int(nb_ccmu2), 
-    int(nb_ccmu3)
-]
-gains = [
-    round(gain_avis_spe, 2),
-    round(gain_ccmu2, 2),
-    round(gain_ccmu3, 2)
-]
+labels = ["Avis spécialisés", "CCMU 2+", "CCMU 3+"]
+volumes = [int(nb_avis_spe), int(nb_ccmu2), int(nb_ccmu3)]
+gains = [round(gain_avis_spe, 2), round(gain_ccmu2, 2), round(gain_ccmu3, 2)]
 
-# Ajouter UHCD uniquement si valorisation > 0
 if nb_uhcd_mono_rum_nouveaux > 0:
     labels.extend(["UHCD mono-RUM (base)", "Majoration 5% UHCD mono-RUM"])
-    volumes.extend([int(nb_uhcd_mono_rum_nouveaux), int(nb_uhcd_mono_rum_nouveaux)])
+    volumes.extend([int(nb_uhcd_mono_rum_nouveaux)] * 2)
     gains.extend([round(uhcd_valorisation_base, 2), round(uhcd_valorisation_bonus, 2)])
 
 data = pd.DataFrame({
@@ -101,13 +86,13 @@ fig = px.bar(
     orientation="h",
     text="Gain total estimé (€)",
     color="Levier",
-    color_discrete_sequence=px.colors.qualitative.Pastel,
+    color_discrete_sequence=px.colors.sequential.Tealgrn,
     title="Impact financier des leviers optimisés par Sclépios I.A."
 )
 fig.update_traces(
     texttemplate='%{text:,.0f} €',
     textposition='outside',
-    hovertemplate='<b>%{y}</b><br>Gain : %{x:,.0f} €'
+    hovertemplate='<b>%{y}</b><br>Gain : %{x:,.0f} €<extra></extra>'
 )
 fig.update_layout(
     xaxis_title="Montant estimé (€)",
