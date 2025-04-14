@@ -7,7 +7,7 @@ import plotly.express as px
 st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wide")
 
 # Logo de Sclépios I.A.
-st.image("logo_complet.png", width=250)
+st.image("https://www.sclepios-ia.com/wp-content/uploads/2024/03/logo_SclepiosIA_complet.png", width=250)
 
 st.title("📊 Simulateur de Valorisation des Urgences")
 st.markdown("""
@@ -15,14 +15,20 @@ Ce simulateur permet d’estimer les **gains financiers potentiels** issus d’u
 - Avis spécialisés
 - Cotation CCMU 2+ et 3+
 - Valorisation des séjours UHCD
+
+💼 Il propose également une simulation des revenus pour **Sclépios I.A.** selon différents modèles économiques :
+- Modèle au **succès** (partage sur gains réalisés)
+- Modèle **statique** (forfait basé sur volume UHCD)
 """)
 
 # Interface utilisateur
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 with col1:
     nb_passages = st.slider("Nombre total de passages aux urgences", 10000, 100000, 40000, step=1000)
 with col2:
-    taux_uhcd_global = st.slider("Augmentation du Taux d'UHCD (%)", 0, 10, 2)
+    taux_uhcd_global = st.slider("Taux global d’orientation vers l’UHCD (%)", 0, 30, 8)
+with col3:
+    modele = st.selectbox("Modèle économique utilisé", ["Succès (partage des gains)", "Statique (forfait UHCD)"])
 
 cs_ext = int(nb_passages * 0.8)
 
@@ -82,6 +88,19 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig, use_container_width=True)
+
+# Simulation du revenu Sclépios
+st.subheader("📊 Simulation du revenu Sclépios I.A.")
+if modele == "Succès (partage des gains)":
+    pourcentage_partenaire = 0.4  # 40% du gain généré
+    revenu_sclepios = total_gain * pourcentage_partenaire
+    st.markdown(f"🔹 **Partenariat au succès :** 40 % des gains générés")
+elif modele == "Statique (forfait UHCD)":
+    forfait_uhcd = 40  # Forfait fixe par UHCD
+    revenu_sclepios = nb_uhcd * forfait_uhcd
+    st.markdown(f"🔹 **Modèle statique :** {forfait_uhcd} € par UHCD valorisé")
+
+st.markdown(f"### 🧾 **Revenu estimé pour Sclépios I.A. : {revenu_sclepios:,.2f} €**")
 
 st.markdown(f"### 💰 Valorisation totale estimée : **{total_gain:,.2f} €**")
 
