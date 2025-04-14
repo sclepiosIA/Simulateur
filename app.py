@@ -10,12 +10,8 @@ import tempfile
 
 st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wide")
 
-# Affichage du logo depuis URL si fichier local indisponible
-logo_path = "logo_complet.png"
-if os.path.exists(logo_path):
-    st.markdown(f"<div style='text-align: center;'><img src='{logo_path}' width='250'></div>", unsafe_allow_html=True)
-else:
-    st.markdown("<div style='text-align: center;'><img src='https://www.sclepios-ia.com/wp-content/uploads/2024/03/logo_SclepiosIA_complet.png' width='250'></div>", unsafe_allow_html=True)
+# Affichage du logo depuis un fichier local uniquement
+st.markdown("<div style='text-align: center;'><img src='logo_complet.png' width='250'></div>", unsafe_allow_html=True)
 
 st.markdown("<br><h1 style='text-align: center;'>📊 Simulateur de Valorisation des Urgences</h1><br>", unsafe_allow_html=True)
 
