@@ -131,37 +131,6 @@ st.plotly_chart(fig, use_container_width=True)
 
 st.markdown(f"<h3 style='text-align: center;'>💰 Valorisation totale estimée : <strong>{total_gain:,.2f} €</strong></h3>", unsafe_allow_html=True)
 
-# Export PDF centré et fonctionnel
-st.markdown("<br><div style='text-align: center;'>", unsafe_allow_html=True)
-export_button = st.button("📄 Exporter en PDF")
-st.markdown("</div><br>", unsafe_allow_html=True)
-
-if export_button:
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    try:
-        if os.path.exists(logo_path):
-            pdf.image(logo_path, x=80, w=50)
-    except:
-        pass
-    pdf.ln(20)
-    pdf.set_font("Arial", 'B', 14)
-    pdf.cell(0, 10, "Résumé des Estimations - Sclépios I.A.", ln=True, align='C')
-    pdf.set_font("Arial", size=11)
-
-    for index, row in data.iterrows():
-        pdf.cell(0, 10, f"{index}: {row['Volume estimé']} - {row['Gain total estimé (€)']:.2f} €", ln=True)
-
-    pdf.ln(10)
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, f"Valorisation totale estimée : {total_gain:,.2f} €", ln=True)
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-        pdf.output(tmp_file.name)
-        with open(tmp_file.name, "rb") as file:
-            b64_pdf = base64.b64encode(file.read()).decode()
-            st.markdown(f'<a href="data:application/pdf;base64,{b64_pdf}" download="simulation_valorisation_sclepios.pdf">📥 Télécharger le PDF</a>', unsafe_allow_html=True)
 
 st.markdown("""
 ---
