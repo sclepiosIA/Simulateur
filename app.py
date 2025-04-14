@@ -25,7 +25,8 @@ with col1:
 with col2:
     taux_uhcd_actuel = st.slider("Taux actuel d’UHCD (%)", 0, 30, 5)
 with col3:
-    taux_uhcd_cible = st.slider("Taux cible d’UHCD (%)", taux_uhcd_actuel, 30, 8)
+    taux_uhcd_default = min(30, taux_uhcd_actuel + 6)
+    taux_uhcd_cible = st.slider("Taux cible d’UHCD (%)", taux_uhcd_actuel, 30, taux_uhcd_default)
 
 col4, _ = st.columns(2)
 with col4:
