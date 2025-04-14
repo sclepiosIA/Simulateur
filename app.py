@@ -21,7 +21,7 @@ Ce simulateur permet d’estimer les **gains financiers potentiels** issus d’u
 # Interface Streamlit
 col1, col2, col3 = st.columns(3)
 with col1:
-    nb_passages = st.slider("Nombre total de passages aux urgences", 10000, 100000, 40000, step=1000)
+    nb_passages = st.slider("Nombre total de passages aux urgences", 10000, 200000, 40000, step=1000)
 with col2:
     taux_uhcd_actuel = st.slider("Taux actuel d’UHCD (%)", 0, 30, 5)
 with col3:
@@ -29,7 +29,7 @@ with col3:
 
 col4, _ = st.columns(2)
 with col4:
-    taux_mono_rum = st.slider("Proportion des UHCD mono-RUM (%)", 0, 100, 70)
+    taux_mono_rum = st.slider("Proportion des UHCD mono-RUM (%)", 0, 100, 45)
 
 # Constantes tarifaires
 TARIF_AVIS_SPE = 24.56
