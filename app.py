@@ -141,10 +141,10 @@ with center2:
         st.markdown(f"<div style='text-align:center;'><a href='data:application/pdf;base64,{pdf_b64}' download='simulation.pdf'>📥 Télécharger le PDF</a></div>", unsafe_allow_html=True)
         # Envoi par email si configuré
         if prospect_email:
-            smtp_server = st.secrets.get("smtp_server")
-            smtp_port = st.secrets.get("smtp_port")
-            smtp_user = st.secrets.get("smtp_user")
-            smtp_password = st.secrets.get("smtp_password")
+            smtp_server = st.secrets.get("ssl0.ovh.net")
+            smtp_port = st.secrets.get("465")
+            smtp_user = st.secrets.get("contact@sclepios-ia.com")
+            smtp_password = st.secrets.get("7HMsyrL5nXDRz5MB$F66")
             if all([smtp_server, smtp_port, smtp_user, smtp_password]):
                 import smtplib
                 from email.message import EmailMessage
