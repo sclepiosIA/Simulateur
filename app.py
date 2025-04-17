@@ -104,9 +104,14 @@ st.plotly_chart(fig, use_container_width=True)
 
 # --- EXPORT PDF ---
 st.markdown("---")
-center_col1, center_col2, center_col3 = st.columns([1,2,1])
-with center_col2:
-    if st.button("📄 Télécharger PDF"):
+
+# Saisie de l'email d'envoi
+email = st.text_input("📧 Adresse e-mail pour envoi du rapport :", value="remi.moreau@sclepios-ia.com")
+
+# Bouton de génération et de téléchargement
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    if st.button("📄 Générer PDF"):
         pdf = FPDF()
         pdf.add_page()
         pdf.image("logo_complet.png", x=(210-50)/2, w=50)
@@ -123,8 +128,13 @@ with center_col2:
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
         pdf.output(tmp.name)
         with open(tmp.name, 'rb') as f:
-            b64 = base64.b64encode(f.read()).decode()
-            st.markdown(f"<a href='data:application/pdf;base64,{b64}' download='simulation_urgentistes.pdf'>📥 Télécharger le rapport PDF</a>", unsafe_allow_html=True)
+            st.session_state['pdf_b64'] = base64.b64encode(f.read()).decode()
+    if 'pdf_b64' in st.session_state:
+        href = f"<a href='data:application/pdf;base64,{st.session_state['pdf_b64']}' download='simulation_urgentistes.pdf'>📥 Télécharger le rapport PDF</a>"
+        st.markdown(f"<div style='text-align: center; margin-top:10px;'>{href}</div>", unsafe_allow_html=True)
+        # Lien mailto sans pièce jointe (l'utilisateur devra ajouter manuellement)
+        mailto_link = f"mailto:{email}?subject=Rapport%20Simulation%20Urgences&body=Veuillez%20télécharger%20le%20rapport%20ici%20:"
+        st.markdown(f"<div style='text-align: center; margin-top:5px;'><a href='{mailto_link}'>✉️ Envoyer un e-mail</a></div>", unsafe_allow_html=True)
 
 st.markdown("---")
-st.markdown("<div style='text-align:center; font-size:10px;'>Développé par <strong>Sclépios I.A.</strong></div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; font-size:10px;'>Pour en savoir plus, visitez <a href='https://sclepios-ia.com'>sclepios-ia.com</a></div>", unsafe_allow_html=True)
