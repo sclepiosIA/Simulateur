@@ -105,36 +105,65 @@ st.plotly_chart(fig, use_container_width=True)
 # --- EXPORT PDF ---
 st.markdown("---")
 
-# Saisie de l'email d'envoi
-email = st.text_input("📧 Adresse e-mail pour envoi du rapport :", value="remi.moreau@sclepios-ia.com")
+# ✉️ Envoi du rapport PDF
+col_name, col_email = st.columns(2)
+with col_name:
+    prospect_name = st.text_input("Nom de l'établissement prospect:", value="")
+with col_email:
+    prospect_email = st.text_input("Email prospect:", value="")
 
-# Bouton de génération et de téléchargement
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    if st.button("📄 Générer PDF"):
+center1, center2, center3 = st.columns([1, 2, 1])
+with center2:
+    if st.button("📄 Générer et envoyer PDF"):
+        # Création du PDF
         pdf = FPDF()
         pdf.add_page()
         pdf.image("logo_complet.png", x=(210-50)/2, w=50)
-        pdf.ln(20)
+        pdf.ln(15)
         pdf.set_font("Arial", 'B', 16)
         pdf.cell(0, 10, "Simulation valorisation Urgences", ln=True, align='C')
+        if prospect_name:
+            pdf.set_font("Arial", '', 12)
+            pdf.cell(0, 8, f"Etablissement: {prospect_name}", ln=True, align='C')
         pdf.ln(5)
         pdf.set_font("Arial", size=12)
         for _, row in data.iterrows():
-            pdf.cell(0, 8, f"{row.name}: {row['Volume']} unités => {row['Gain (€)']:.2f} €", ln=True)
+            pdf.cell(0, 8, f"{row.name}: {row['Volume']} unités => {row['Gain (€)']:.2f} EUR", ln=True)
         pdf.ln(5)
         pdf.set_font("Arial", 'B', 14)
-        pdf.cell(0, 10, f"Total estimé: {total_gain:,.2f} €", ln=True, align='C')
+        pdf.cell(0, 10, f"Total estimé: {total_gain:,.2f} EUR", ln=True, align='C')
+        # Sauvegarde temporaire
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
         pdf.output(tmp.name)
+        # Lien de téléchargement
         with open(tmp.name, 'rb') as f:
-            st.session_state['pdf_b64'] = base64.b64encode(f.read()).decode()
-    if 'pdf_b64' in st.session_state:
-        href = f"<a href='data:application/pdf;base64,{st.session_state['pdf_b64']}' download='simulation_urgentistes.pdf'>📥 Télécharger le rapport PDF</a>"
-        st.markdown(f"<div style='text-align: center; margin-top:10px;'>{href}</div>", unsafe_allow_html=True)
-        # Lien mailto sans pièce jointe (l'utilisateur devra ajouter manuellement)
-        mailto_link = f"mailto:{email}?subject=Rapport%20Simulation%20Urgences&body=Veuillez%20télécharger%20le%20rapport%20ici%20:"
-        st.markdown(f"<div style='text-align: center; margin-top:5px;'><a href='{mailto_link}'>✉️ Envoyer un e-mail</a></div>", unsafe_allow_html=True)
-
+            pdf_b64 = base64.b64encode(f.read()).decode()
+        st.markdown(f"<div style='text-align:center;'><a href='data:application/pdf;base64,{pdf_b64}' download='simulation.pdf'>📥 Télécharger le PDF</a></div>", unsafe_allow_html=True)
+        # Envoi par email si configuré
+        if prospect_email:
+            smtp_server = st.secrets.get("smtp_server")
+            smtp_port = st.secrets.get("smtp_port")
+            smtp_user = st.secrets.get("smtp_user")
+            smtp_password = st.secrets.get("smtp_password")
+            if all([smtp_server, smtp_port, smtp_user, smtp_password]):
+                import smtplib
+                from email.message import EmailMessage
+                msg = EmailMessage()
+                msg["Subject"] = "Rapport Simulation Urgences"
+                msg["From"] = smtp_user
+                msg["To"] = prospect_email
+                msg.set_content("Veuillez trouver en pièce jointe le rapport de simulation.")
+                msg.add_attachment(base64.b64decode(pdf_b64), maintype="application", subtype="pdf", filename="simulation.pdf")
+                try:
+                    server = smtplib.SMTP(smtp_server, int(smtp_port))
+                    server.starttls()
+                    server.login(smtp_user, smtp_password)
+                    server.send_message(msg)
+                    server.quit()
+                    st.success(f"Email envoyé à {prospect_email}")
+                except Exception as e:
+                    st.error(f"Erreur envoi email: {e}")
+            else:
+                st.warning("Configurez SMTP via st.secrets pour activer l'envoi d'email.")
 st.markdown("---")
-st.markdown("<div style='text-align:center; font-size:10px;'>Pour en savoir plus, visitez <a href='https://sclepios-ia.com'>sclepios-ia.com</a></div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center;'><a href='https://sclepios-ia.com' style='font-weight:bold; color:#2E86AB;'>Visitez Sclépios I.A.</a></div>", unsafe_allow_html=True)
