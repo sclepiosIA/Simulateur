@@ -141,6 +141,7 @@ with center2:
             pdf_b64 = base64.b64encode(f.read()).decode()
         # Affichage du lien de téléchargement
         st.markdown(f"<div style='text-align:center; margin-top:10px;'><a href='data:application/pdf;base64,{pdf_b64}' download='simulation.pdf'>📥 Télécharger le PDF</a></div>", unsafe_allow_html=True)
+        st.success("PDF généré avec succès !")
         # Envoi par email
         if prospect_email:
             smtp_server = "ssl0.ovh.net"
