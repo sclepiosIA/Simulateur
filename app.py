@@ -11,7 +11,26 @@ import smtplib
 from email.message import EmailMessage
 
 # Configuration de la page
-st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wide")
+
+# --- Fonctions utilitaires ---
+def generate_pdf_bytes(df, total, prospect, logo_file):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.image(logo_file, x=(210-50)/2, w=50)
+    pdf.ln(15)
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(0, 10, "Simulation valorisation Urgences", ln=True, align='C')
+    if prospect:
+        pdf.set_font("Arial", '', 12)
+        pdf.cell(0, 8, f"Prospect : {prospect}", ln=True, align='C')
+    pdf.ln(5)
+    pdf.set_font("Arial", size=12)
+    for _, row in df.iterrows():
+        pdf.cell(0, 8, f"{row.name} : {row['Volume']} => {row['Gain (€)']:.2f} EUR", ln=True)
+    pdf.ln(5)
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(0, 10, f"Total : {total:,.2f} EUR", ln=True, align='C')
+    return pdf.output(dest='S').encode('latin1')
 
 # --- HEADER ---
 h1, h2, h3 = st.columns([1, 2, 1])
