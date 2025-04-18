@@ -58,14 +58,15 @@ nb_ccmu3 = cs_ext * 0.03
 gain_avis = nb_avis * TARIF_AVIS_SPE
 gain_ccmu2 = nb_ccmu2 * TARIF_CCMU2
 gain_ccmu3 = nb_ccmu3 * TARIF_CCMU3
-# UHCD mono-RUM gains :
+# UHCD mono-RUM gains
 # base valorisation uniquement sur nouveaux passages
-uhcd_valorisation_base = nb_mono_suppl * TARIF_UHCD
-# majoration s'appliquant à l'ensemble des UHCD mono-RUM (initiaux + nouveaux)
-uhcd_valorisation_bonus = (nb_mono_actuel + nb_mono_suppl) * TARIF_UHCD * BONUS_MONORUM
+gain_uhcd_base = nb_mono_suppl * TARIF_UHCD
+# majoration appliquée sur l'ensemble des mono-RUM (initiaux + nouveaux)
+gain_uhcd_bonus = (nb_mono_actuel + nb_mono_suppl) * TARIF_UHCD * BONUS_MONORUM
+gain_uhcd = gain_uhcd_base + gain_uhcd_bonus
 
-gain_uhcd = uhcd_valorisation_base + uhcd_valorisation_bonus
 # Total général
+total_gain = gain_avis + gain_ccmu2 + gain_ccmu3 + gain_uhcd général
 total_gain = gain_avis + gain_ccmu2 + gain_ccmu3 + gain_uhcd
 
 # --- AFFICHAGE DES MÉTRIQUES ---
@@ -80,13 +81,16 @@ st.markdown("---")
 
 # --- TABLEAU DÉTAILLÉ ---
 st.subheader("📋 Détail par levier")
+# Mise à jour des volumes pour majoration
+volumes = [int(nb_avis), int(nb_ccmu2), int(nb_ccmu3), int(nb_mono_suppl), int(nb_mono_actuel + nb_mono_suppl)]
+labels = ["Avis spécialisés", "CCMU 2+", "CCMU 3+", "UHCD mono-RUM base", "Majoration UHCD mono-RUM"]
 data = pd.DataFrame({
-    "Levier": ["Avis spécialisés", "CCMU 2+", "CCMU 3+", "UHCD mono-RUM base", "Majoration UHCD mono-RUM"],
-    "Volume": [int(nb_avis), int(nb_ccmu2), int(nb_ccmu3), int(nb_mono_suppl), int(nb_mono_suppl)],
+    "Levier": labels,
+    "Volume": volumes,
     "Gain (€)": [gain_avis, gain_ccmu2, gain_ccmu3, gain_uhcd_base, gain_uhcd_bonus]
 })
 data["Gain (€)"] = data["Gain (€)"].round(2)
-st.dataframe(data.set_index("Levier"), use_container_width=True)
+st.dataframe(data.set_index("Levier"), use_container_width=True)(data.set_index("Levier"), use_container_width=True)
 
 # --- GRAPHIQUE INTERACTIF ---
 st.subheader("📈 Impact financier par levier")
