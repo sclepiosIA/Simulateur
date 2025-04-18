@@ -58,13 +58,14 @@ nb_ccmu3 = cs_ext * 0.03
 gain_avis = nb_avis * TARIF_AVIS_SPE
 gain_ccmu2 = nb_ccmu2 * TARIF_CCMU2
 gain_ccmu3 = nb_ccmu3 * TARIF_CCMU3
-# UHCD gains
-gain_uhcd_base = nb_mono_suppl * TARIF_UHCD
-gain_uhcd_bonus = nb_mono_suppl * TARIF_UHCD * BONUS_MONORUM
-gain_uhcd = gain_uhcd_base + gain_uhcd_bonus
+# UHCD mono-RUM gains (seulement sur nouveaux passages)
+uhcd_valorisation_base = nb_uhcd_mono_rum_nouveaux * TARIF_UHCD
+uhcd_valorisation_bonus = nb_uhcd_mono_rum_nouveaux * TARIF_UHCD * BONUS_MONORUM
 
-# Total
+gain_uhcd = uhcd_valorisation_base + uhcd_valorisation_bonus
+# Total général
 total_gain = gain_avis + gain_ccmu2 + gain_ccmu3 + gain_uhcd
+ gain_avis + gain_ccmu2 + gain_ccmu3 + gain_uhcd
 
 # --- AFFICHAGE DES MÉTRIQUES ---
 st.markdown("### 🔍 Indicateurs clés")
@@ -104,68 +105,55 @@ st.plotly_chart(fig, use_container_width=True)
 
 # --- EXPORT PDF ---
 st.markdown("---")
-
-# --- Section Envoi de rapport ---
-st.markdown("### 📄 Génération et envoi du rapport PDF")
+st.markdown("### 📄 Génération du rapport PDF")
 col_name, col_email = st.columns(2)
 with col_name:
     prospect_name = st.text_input("Nom de l'établissement prospect:")
 with col_email:
     prospect_email = st.text_input("Email prospect:")
 
-center1, center2, center3 = st.columns([1,2,1])
-with center2:
-    if st.button("Générer et envoyer PDF"):
-        # Création du PDF
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.image("logo_complet.png", x=(210-50)/2, w=50)
-        pdf.ln(15)
-        pdf.set_font("Arial", 'B', 16)
-        pdf.cell(0, 10, "Simulation valorisation Urgences", ln=True, align='C')
-        if prospect_name:
-            pdf.set_font("Arial", '', 12)
-            pdf.cell(0, 8, f"Etablissement: {prospect_name}", ln=True, align='C')
-        pdf.ln(5)
-        pdf.set_font("Arial", size=12)
-        for _, row in data.iterrows():
-            pdf.cell(0, 8, f"{row.name}: {row['Volume']} unités => {row['Gain (€)']:.2f} EUR", ln=True)
-        pdf.ln(5)
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(0, 10, f"Total estimé: {total_gain:,.2f} EUR", ln=True, align='C')
-        # Sauvegarde temporaire
-        tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
-        pdf.output(tmp_file.name)
-        # Lecture et encodage
-        with open(tmp_file.name, 'rb') as f:
-            pdf_b64 = base64.b64encode(f.read()).decode()
-        # Affichage du lien de téléchargement
-        st.markdown(f"<div style='text-align:center; margin-top:10px;'><a href='data:application/pdf;base64,{pdf_b64}' download='simulation.pdf'>📥 Télécharger le PDF</a></div>", unsafe_allow_html=True)
-        st.success("PDF généré avec succès !")
-        # Envoi par email
-        if prospect_email:
-            smtp_server = "ssl0.ovh.net"
-            smtp_port = 465
-            smtp_user = "contact@sclepios-ia.com"
-            smtp_password = "7HMsyrL5nXDRz5MB$F66"
-            try:
-                import smtplib
-                from email.message import EmailMessage
-                msg = EmailMessage()
-                msg['Subject'] = "Rapport Simulation Urgences"
-                msg['From'] = smtp_user
-                msg['To'] = prospect_email
-                msg.set_content("Veuillez trouver en pièce jointe le rapport de simulation.")
-                msg.add_attachment(base64.b64decode(pdf_b64), maintype='application', subtype='pdf', filename='simulation.pdf')
-                # Utiliser SMTP SSL
-                server = smtplib.SMTP_SSL(smtp_server, smtp_port)
-                server.login(smtp_user, smtp_password)
-                server.send_message(msg)
-                server.quit()
-                st.success(f"Rapport envoyé à {prospect_email}")
-            except Exception as e:
-                st.error(f"Échec envoi email: {e}")
+# Bouton de génération et téléchargement PDF
+if st.button("Générer le rapport PDF"):
+    # Création du PDF en mémoire
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.image("logo_complet.png", x=(210-50)/2, w=50)
+    pdf.ln(15)
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(0, 10, "Simulation valorisation Urgences", ln=True, align='C')
+    if prospect_name:
+        pdf.set_font("Arial", '', 12)
+        pdf.cell(0, 8, f"Etablissement: {prospect_name}", ln=True, align='C')
+    pdf.ln(5)
+    pdf.set_font("Arial", size=12)
+    for _, row in data.iterrows():
+        pdf.cell(0, 8, f"{row.name}: {row['Volume']} unités => {row['Gain (€)']:.2f} EUR", ln=True)
+    pdf.ln(5)
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(0, 10, f"Total estimé: {total_gain:,.2f} EUR", ln=True, align='C')
+    # Export PDF via download button
+    pdf_bytes = pdf.output(dest='S').encode('latin1')
+    st.download_button("📥 Télécharger le PDF", data=pdf_bytes, file_name="simulation.pdf", mime="application/pdf")
+    st.success("PDF généré avec succès !")
+    # Envoi par email si renseigné
+    if prospect_email:
+        try:
+            import smtplib
+            from email.message import EmailMessage
+            msg = EmailMessage()
+            msg['Subject'] = "Rapport Simulation Urgences"
+            msg['From'] = "contact@sclepios-ia.com"
+            msg['To'] = prospect_email
+            msg.set_content("Veuillez trouver le rapport en pièce jointe.")
+            msg.add_attachment(pdf_bytes, maintype='application', subtype='pdf', filename='simulation.pdf')
+            server = smtplib.SMTP_SSL('ssl0.ovh.net', 465)
+            server.login('contact@sclepios-ia.com', '7HMsyrL5nXDRz5MB$F66')
+            server.send_message(msg)
+            server.quit()
+            st.success(f"Email envoyé à {prospect_email}")
+        except Exception as e:
+            st.error(f"Échec envoi email: {e}")
 # Footer
 st.markdown("---")
-st.markdown("<div style='text-align:center; color:#2E86AB; font-weight:bold; font-size:16px;'>Remi Moreau: remi.moreau@sclepios-ia.com</div>", unsafe_allow_html=True)
-st.markdown("<div style='text-align:center;'><a href='https://sclepios-ia.com' style='color:#2E86AB;'>Visitez https://sclepios-ia.com</a></div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:#2E86AB; font-weight:bold; font-size:16px;'>Rémi Moreau: remi.moreau@sclepios-ia.com</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center;'><a href='https://sclepios-ia.com' style='color:#2E86AB;'>Visitez notre site</a></div>", unsafe_allow_html=True)
