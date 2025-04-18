@@ -67,9 +67,6 @@ uhcd_valorisation_bonus = (nb_mono_actuel + nb_mono_suppl) * TARIF_UHCD * BONUS_
 gain_uhcd = uhcd_valorisation_base + uhcd_valorisation_bonus
 # Total général
 total_gain = gain_avis + gain_ccmu2 + gain_ccmu3 + gain_uhcd
-total_gain = gain_avis + gain_ccmu2 + gain_ccmu3 + gain_uhcd
-total_gain = gain_avis + gain_ccmu2 + gain_ccmu3 + gain_uhcd
- gain_avis + gain_ccmu2 + gain_ccmu3 + gain_uhcd
 
 # --- AFFICHAGE DES MÉTRIQUES ---
 st.markdown("### 🔍 Indicateurs clés")
