@@ -3,46 +3,35 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
+from fpdf import FPDF
 import io
+import os
 import smtplib
 from email.message import EmailMessage
 
-# --- FONCTION DE GÉNÉRATION DE PDF AVEC reportlab ---
+# --- FONCTIONS UTILITAIRES ---
 def generate_pdf_bytes(df, total, prospect, logo_file):
-    buffer = io.BytesIO()
-    # Création du canvas PDF
-    c = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
-    # Logo
-    if logo_file and os.path.exists(logo_file):
-        c.drawImage(logo_file, (width-100)/2, height-100, width=100, preserveAspectRatio=True)
-    # Titre
-    c.setFont("Helvetica-Bold", 16)
-    c.drawCentredString(width/2, height-150, "Simulation valorisation Urgences")
-    y = height-180
-    # Prospect
+    pdf = FPDF()
+    pdf.add_page()
+    # Logo si disponible
+    if os.path.exists(logo_file):
+        pdf.image(logo_file, x=(210-50)/2, w=50)
+    pdf.ln(15)
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(0, 10, "Simulation valorisation Urgences", ln=True, align='C')
     if prospect:
-        c.setFont("Helvetica", 12)
-        c.drawCentredString(width/2, y, f"Prospect: {prospect}")
-        y -= 20
-    # Détails par levier
-    c.setFont("Helvetica", 10)
-    for index, row in df.iterrows():
-        text = f"{row.name}: {row['Volume']} => {row['Gain (€)']:.2f} EUR"
-        c.drawString(50, y, text)
-        y -= 15
-        if y < 50:
-            c.showPage()
-            y = height-50
-    # Total
-    c.setFont("Helvetica-Bold", 12)
-    c.drawCentredString(width/2, y-10, f"Total: {total:,.2f} EUR")
-    c.showPage()
-    c.save()
-    buffer.seek(0)
-    return buffer.read()
+        pdf.ln(5)
+        pdf.set_font("Arial", '', 12)
+        pdf.cell(0, 8, f"Prospect: {prospect}", ln=True, align='C')
+    pdf.ln(10)
+    pdf.set_font("Arial", size=12)
+    for _, row in df.iterrows():
+        pdf.cell(0, 8, f"{row.name}: {row['Volume']} => {row['Gain (€)']:.2f} EUR", ln=True)
+    pdf.ln(10)
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(0, 10, f"Total: {total:,.2f} EUR", ln=True, align='C')
+    # Retour des octets
+    return pdf.output(dest='S').encode('latin1')
 
 # Configuration de la page
 st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wide")
@@ -63,16 +52,15 @@ with st.sidebar.expander("Modifier les tarifs", expanded=False):
     TARIF_UHCD = st.number_input("Tarif UHCD (€)", 0.0, 2000.0, 400.0, 1.0)
     BONUS_MONORUM = st.number_input("Majoration UHCD mono-RUM (%)", 0.0, 100.0, 5.0, 0.1) / 100.0
 
-# Scénario
 baseline = st.sidebar.slider("Taux actuel d’UHCD (%)", 0, 50, 5)
 default_cible = min(50, baseline + 6)
-cible = st.sidebar.slider("Taux cible d’UHCD (%)", baseline, 50, default_cible)
+taux_cible = st.sidebar.slider("Taux cible d’UHCD (%)", baseline, 50, default_cible)
 taux_mono = st.sidebar.slider("Proportion UHCD mono-RUM (%)", 0, 100, 70)
 passages = st.sidebar.number_input("Nombre total de passages", 0, 1000000, 40000, 100)
 
 # --- CALCULS ---
 uhcd_base = passages * baseline / 100
-uhcd_target = passages * cible / 100
+uhcd_target = passages * taux_cible / 100
 uhcd_diff = max(0, uhcd_target - uhcd_base)
 mono_base = uhcd_base * taux_mono / 100
 mono_diff = uhcd_diff * taux_mono / 100
@@ -105,7 +93,7 @@ labels = ["Avis spécialisés", "CCMU 2+", "CCMU 3+", "UHCD mono-RUM base", "Maj
 vols = [int(avis), int(ccmu2), int(ccmu3), int(mono_diff), int(mono_base+mono_diff)]
 gains_list = [gain_avis, gain_ccmu2, gain_ccmu3, gain_uhcd_base, gain_uhcd_bonus]
 data = pd.DataFrame({"Levier": labels, "Volume": vols, "Gain (€)": gains_list})
-data["Gain (€)"] = data["Gain (€)"].round(2)
+data["Gain (€)" ] = data["Gain (€)"].round(2)
 st.dataframe(data.set_index("Levier"), use_container_width=True)
 
 # --- GRAPHIQUE ---
@@ -122,7 +110,7 @@ with left:
     prospect = st.text_input("Établissement prospect :")
     if st.button("📥 Télécharger PDF"):
         pdf_bytes = generate_pdf_bytes(data, total_gain, prospect, "logo_complet.png")
-        st.download_button("Télécharger", pdf_bytes, "simulation.pdf", "application/pdf")
+        st.download_button("Télécharger", data=pdf_bytes, file_name="simulation.pdf", mime="application/pdf")
 with right:
     email = st.text_input("Email prospect :")
     if st.button("✉️ Envoyer par email"):
