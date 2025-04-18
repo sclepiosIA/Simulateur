@@ -103,12 +103,15 @@ st.plotly_chart(fig, use_container_width=True)
 # --- EXPORT PDF ---
 st.markdown("---")
 st.markdown("### 📄 Génération du rapport PDF")
-col1, col2 = st.columns(2)
-with col1:
-    prospect = st.text_input("Établissement prospect:")
-with col2:
-    email = st.text_input("Email prospect:")
-if st.button("Générer PDF"):
+
+# Formulaire de saisie des infos prospect pour PDF
+with st.form("pdf_form"):
+    prospect = st.text_input("Établissement prospect :")
+    email = st.text_input("Email prospect :")
+    submitted = st.form_submit_button("Générer PDF")
+
+if submitted:
+    # Création du PDF en mémoire
     pdf = FPDF()
     pdf.add_page()
     pdf.image("logo_complet.png", x=(210-50)/2, w=50)
@@ -116,17 +119,26 @@ if st.button("Générer PDF"):
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(0, 10, "Simulation valorisation Urgences", ln=True, align='C')
     if prospect:
-        pdf.set_font("Arial", '', 12); pdf.cell(0, 8, f"Prospect: {prospect}", ln=True, align='C')
+        pdf.set_font("Arial", '', 12)
+        pdf.cell(0, 8, f"Prospect : {prospect}", ln=True, align='C')
     pdf.ln(5)
     pdf.set_font("Arial", size=12)
-    for _, r in data.iterrows():
-        pdf.cell(0, 8, f"{r.name}: {r['Volume']} => {r['Gain (€)']:.2f} EUR", ln=True)
+    for _, row in data.iterrows():
+        pdf.cell(0, 8, f"{row.name} : {row['Volume']} => {row['Gain (€)']:.2f} EUR", ln=True)
     pdf.ln(5)
-    pdf.set_font("Arial", 'B', 14); pdf.cell(0, 10, f"Total: {total_gain:,.2f} EUR", ln=True, align='C')
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(0, 10, f"Total estimé : {total_gain:,.2f} EUR", ln=True, align='C')
+    # Export du PDF
     pdf_bytes = pdf.output(dest='S').encode('latin1')
-    st.download_button("Télécharger PDF", data=pdf_bytes, file_name="simulation.pdf", mime="application/pdf")
-    st.success("PDF généré !")
+    st.download_button(
+        label="📥 Télécharger le PDF",
+        data=pdf_bytes,
+        file_name="simulation.pdf",
+        mime="application/pdf"
+    )
+    st.success("PDF généré avec succès !")
 
+# Footer
 st.markdown("---")
-st.markdown("<div style='text-align:center; color:#2E86AB; font-weight:bold;'>Rémi Moreau: remi.moreau@sclepios-ia.com</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:#2E86AB; font-weight:bold;'>Rémi Moreau : remi.moreau@sclepios-ia.com</div>", unsafe_allow_html=True)
 st.markdown("<div style='text-align:center;'><a href='https://sclepios-ia.com' style='color:#2E86AB;'>Visitez notre site</a></div>", unsafe_allow_html=True)
