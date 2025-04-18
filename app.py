@@ -10,9 +10,7 @@ import tempfile
 import smtplib
 from email.message import EmailMessage
 
-# Configuration de la page
-
-# --- Fonctions utilitaires ---
+# --- FONCTIONS UTILITAIRES ---
 def generate_pdf_bytes(df, total, prospect, logo_file):
     pdf = FPDF()
     pdf.add_page()
@@ -32,6 +30,9 @@ def generate_pdf_bytes(df, total, prospect, logo_file):
     pdf.cell(0, 10, f"Total : {total:,.2f} EUR", ln=True, align='C')
     return pdf.output(dest='S').encode('latin1')
 
+# Configuration de la page
+st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wide")
+
 # --- HEADER ---
 h1, h2, h3 = st.columns([1, 2, 1])
 with h2:
@@ -43,15 +44,13 @@ st.markdown("---")
 
 # --- SIDEBAR PARAMÈTRES ---
 st.sidebar.header("⚙️ Paramètres de simulation")
-# Tarifs personnalisables
-tarif_exp = st.sidebar.expander("Modifier les tarifs", expanded=False)
-with tarif_exp:
+with st.sidebar.expander("Modifier les tarifs", expanded=False):
     TARIF_AVIS_SPE = st.number_input("Tarif Avis Spécialisé (€)", 0.0, 1000.0, 24.56, 0.01)
     TARIF_CCMU2 = st.number_input("Tarif CCMU 2+ (€)", 0.0, 1000.0, 14.53, 0.01)
     TARIF_CCMU3 = st.number_input("Tarif CCMU 3+ (€)", 0.0, 1000.0, 19.38, 0.01)
     TARIF_UHCD = st.number_input("Tarif UHCD (€)", 0.0, 2000.0, 400.0, 1.0)
     BONUS_MONORUM = st.number_input("Majoration UHCD mono-RUM (%)", 0.0, 100.0, 5.0, 0.1) / 100.0
-# Scénario
+
 taux_actuel = st.sidebar.slider("Taux actuel d’UHCD (%)", 0, 50, 5)
 default_cible = min(50, taux_actuel + 6)
 taux_cible = st.sidebar.slider("Taux cible d’UHCD (%)", taux_actuel, 50, default_cible)
@@ -109,28 +108,28 @@ fig.update_traces(textposition='outside', texttemplate='%{text:,.0f}')
 fig.update_layout(margin=dict(l=100, r=20, t=50, b=20))
 st.plotly_chart(fig, use_container_width=True)
 
-# --- EXPORT PDF et Email ---
+# --- EXPORT PDF et EMAIL ---
 st.markdown("---")
 left, right = st.columns(2)
 with left:
     prospect_name = st.text_input("Établissement prospect :")
-    # Bouton téléchargement
-    pdf_bytes = None
-    if st.button("📥 Télécharger PDF"):
-        pdf_bytes = generate_pdf_bytes(data, total_gain, prospect_name, "logo_complet.png")
-        st.download_button("Télécharger", pdf_bytes, file_name="simulation.pdf", mime="application/pdf")
+    pdf_data = generate_pdf_bytes(data, total_gain, prospect_name, "logo_complet.png")
+    st.download_button(
+        label="📥 Télécharger PDF",
+        data=pdf_data,
+        file_name="simulation.pdf",
+        mime="application/pdf",
+    )
 with right:
     prospect_email = st.text_input("Email prospect :")
     if st.button("✉️ Envoyer par email"):
-        if pdf_bytes is None:
-            pdf_bytes = generate_pdf_bytes(data, total_gain, prospect_name, "logo_complet.png")
         try:
             msg = EmailMessage()
             msg['Subject'] = "Rapport Simulation Urgences"
             msg['From'] = "contact@sclepios-ia.com"
             msg['To'] = prospect_email
             msg.set_content("Veuillez trouver le rapport en pièce jointe.")
-            msg.add_attachment(pdf_bytes, maintype='application', subtype='pdf', filename='simulation.pdf')
+            msg.add_attachment(pdf_data, maintype='application', subtype='pdf', filename='simulation.pdf')
             server = smtplib.SMTP_SSL('ssl0.ovh.net', 465)
             server.login('contact@sclepios-ia.com', '7HMsyrL5nXDRz5MB$F66')
             server.send_message(msg)
@@ -139,26 +138,7 @@ with right:
         except Exception as e:
             st.error(f"Échec envoi email: {e}")
 
+# --- FOOTER ---
 st.markdown("---")
 st.markdown("<div style='text-align:center; color:#2E86AB;'><strong>Rémi Moreau</strong>: remi.moreau@sclepios-ia.com</div>", unsafe_allow_html=True)
 st.markdown("<div style='text-align:center;'><a href='https://sclepios-ia.com' style='color:#2E86AB;'>Visitez notre site</a></div>", unsafe_allow_html=True)
-
-# --- Fonctions utilitaires ---
-def generate_pdf_bytes(df, total, prospect, logo_file):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.image(logo_file, x=(210-50)/2, w=50)
-    pdf.ln(15)
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(0, 10, "Simulation valorisation Urgences", ln=True, align='C')
-    if prospect:
-        pdf.set_font("Arial", '', 12)
-        pdf.cell(0, 8, f"Prospect : {prospect}", ln=True, align='C')
-    pdf.ln(5)
-    pdf.set_font("Arial", size=12)
-    for _, row in df.iterrows():
-        pdf.cell(0, 8, f"{row.name} : {row['Volume']} => {row['Gain (€)']:.2f} EUR", ln=True)
-    pdf.ln(5)
-    pdf.set_font("Arial", 'B', 14)
-    pdf.cell(0, 10, f"Total : {total:,.2f} EUR", ln=True, align='C')
-    return pdf.output(dest='S').encode('latin1')
