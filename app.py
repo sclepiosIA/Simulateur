@@ -58,12 +58,15 @@ nb_ccmu3 = cs_ext * 0.03
 gain_avis = nb_avis * TARIF_AVIS_SPE
 gain_ccmu2 = nb_ccmu2 * TARIF_CCMU2
 gain_ccmu3 = nb_ccmu3 * TARIF_CCMU3
-# UHCD mono-RUM gains (seulement sur nouveaux passages)
-uhcd_valorisation_base = nb_uhcd_mono_rum_nouveaux * TARIF_UHCD
-uhcd_valorisation_bonus = nb_uhcd_mono_rum_nouveaux * TARIF_UHCD * BONUS_MONORUM
+# UHCD mono-RUM gains :
+# base valorisation uniquement sur nouveaux passages
+uhcd_valorisation_base = nb_mono_suppl * TARIF_UHCD
+# majoration s'appliquant à l'ensemble des UHCD mono-RUM (initiaux + nouveaux)
+uhcd_valorisation_bonus = (nb_mono_actuel + nb_mono_suppl) * TARIF_UHCD * BONUS_MONORUM
 
 gain_uhcd = uhcd_valorisation_base + uhcd_valorisation_bonus
 # Total général
+total_gain = gain_avis + gain_ccmu2 + gain_ccmu3 + gain_uhcd
 total_gain = gain_avis + gain_ccmu2 + gain_ccmu3 + gain_uhcd
  gain_avis + gain_ccmu2 + gain_ccmu3 + gain_uhcd
 
