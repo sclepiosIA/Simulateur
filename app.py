@@ -15,12 +15,15 @@ st.set_page_config(page_title="Simulateur Urgences - Sclépios I.A.", layout="wi
 header_col1, header_col2, header_col3 = st.columns([1, 2, 1])
 with header_col2:
     st.image("logo_complet.png", width=200)
-st.markdown("<h1 style='text-align: center; margin-top: -20px;'>📊 Simulateur de Valorisation des Urgences</h1>", unsafe_allow_html=True)
+st.markdown(
+    "<h1 style='text-align: center; margin-top: -20px;'>📊 Simulateur de Valorisation des Urgences</h1>",
+    unsafe_allow_html=True,
+)
 st.markdown("---")
 
 # --- SIDEBAR PARAMÈTRES ---
 st.sidebar.header("⚙️ Paramètres de simulation")
-# Tarif personnalisables
+# Tarifs personnalisables
 tarif_expander = st.sidebar.expander("Modifier les tarifs de valorisation", expanded=False)
 with tarif_expander:
     TARIF_AVIS_SPE = st.number_input("Tarif Avis Spécialisé (€)", value=24.56, step=0.01)
@@ -29,80 +32,69 @@ with tarif_expander:
     TARIF_UHCD = st.number_input("Tarif UHCD (€)", value=400.0, step=1.0)
     BONUS_MONORUM = st.number_input("Majoration UHCD mono-RUM (%)", value=5.0, step=0.1) / 100.0
 
-# Scénario
-taux_baseline = st.sidebar.slider("Taux actuel d’UHCD (%)", min_value=0, max_value=50, value=5)
-default_cible = min(50, taux_baseline + 6)
-taux_cible = st.sidebar.slider(
-    "Taux cible d’UHCD (%)", min_value=taux_baseline, max_value=50, value=default_cible
-)
-taux_mono_rum = st.sidebar.slider("Proportion UHCD mono-RUM (%)", min_value=0, max_value=100, value=70)
-nb_passages = st.sidebar.number_input("Nombre total de passages", min_value=0, value=40000, step=100)
+# Scénario de base et cible
+baseline = st.sidebar.slider("Taux actuel d’UHCD (%)", 0, 50, 5)
+default_cible = min(50, baseline + 6)
+cible = st.sidebar.slider("Taux cible d’UHCD (%)", baseline, 50, default_cible)
+taux_mono = st.sidebar.slider("Proportion UHCD mono-RUM (%)", 0, 100, 70)
+passages = st.sidebar.number_input("Nombre total de passages", 0, 1000000, 40000, step=100)
 
 # --- CALCULS ---
-# UHCD volumes
-nb_uhcd_actuel = nb_passages * taux_baseline / 100
-nb_uhcd_cible = nb_passages * taux_cible / 100
-nb_uhcd_suppl = max(0, nb_uhcd_cible - nb_uhcd_actuel)
-# Mono-RUM volumes
-nb_mono_actuel = nb_uhcd_actuel * taux_mono_rum / 100
-nb_mono_suppl = nb_uhcd_suppl * taux_mono_rum / 100
+# Volumes UHCD
+uhcd_base_vol = passages * baseline / 100
+uhcd_cible_vol = passages * cible / 100
+uhcd_suppl_vol = max(0, uhcd_cible_vol - uhcd_base_vol)
+# Volumes Mono-RUM
+mono_base_vol = uhcd_base_vol * taux_mono / 100
+mono_suppl_vol = uhcd_suppl_vol * taux_mono / 100
 
 # Consultations externes hors UHCD
-cs_ext = nb_passages - nb_uhcd_actuel
-# Volumes avis et CCMU
-nb_avis = cs_ext * 0.07
-nb_ccmu2 = cs_ext * 0.03
-nb_ccmu3 = cs_ext * 0.03
+consult_ext = passages - uhcd_base_vol
+# Autres volumes
+avis_vol = consult_ext * 0.07
+ccmu2_vol = consult_ext * 0.03
+ccmu3_vol = consult_ext * 0.03
 
-# Gains
-gain_avis = nb_avis * TARIF_AVIS_SPE
-gain_ccmu2 = nb_ccmu2 * TARIF_CCMU2
-gain_ccmu3 = nb_ccmu3 * TARIF_CCMU3
-# UHCD mono-RUM gains
-# base valorisation uniquement sur nouveaux passages
-gain_uhcd_base = nb_mono_suppl * TARIF_UHCD
-# majoration appliquée sur l'ensemble des mono-RUM (initiaux + nouveaux)
-gain_uhcd_bonus = (nb_mono_actuel + nb_mono_suppl) * TARIF_UHCD * BONUS_MONORUM
+# Gains par levier
+gain_avis = avis_vol * TARIF_AVIS_SPE
+gain_ccmu2 = ccmu2_vol * TARIF_CCMU2
+gain_ccmu3 = ccmu3_vol * TARIF_CCMU3
+# Gains UHCD
+gain_uhcd_base = mono_suppl_vol * TARIF_UHCD
+# Majoration sur initiaux + suppléments
+gain_uhcd_bonus = (mono_base_vol + mono_suppl_vol) * TARIF_UHCD * BONUS_MONORUM
 gain_uhcd = gain_uhcd_base + gain_uhcd_bonus
 
-# Total général
-total_gain = gain_avis + gain_ccmu2 + gain_ccmu3 + gain_uhcd général
+# Gain total
 total_gain = gain_avis + gain_ccmu2 + gain_ccmu3 + gain_uhcd
 
-# --- AFFICHAGE DES MÉTRIQUES ---
+# --- AFFICHAGE METRICS ---
 st.markdown("### 🔍 Indicateurs clés")
-metric_cols = st.columns(4)
-metric_cols[0].metric("Gains Avis spé (€)", f"{gain_avis:,.0f}")
-metric_cols[1].metric("Gains CCMU2+ (€)", f"{gain_ccmu2:,.0f}")
-metric_cols[2].metric("Gains CCMU3+ (€)", f"{gain_ccmu3:,.0f}")
-metric_cols[3].metric("Gains UHCD (€)", f"{gain_uhcd:,.0f}")
-st.markdown(f"<h3 style='text-align:center;'>💰 Total estimé : <strong>{total_gain:,.0f} €</strong></h3>", unsafe_allow_html=True)
+kpis = st.columns(4)
+kpis[0].metric("Avis spé (€)", f"{gain_avis:,.0f}")
+kpis[1].metric("CCMU2+ (€)", f"{gain_ccmu2:,.0f}")
+kpis[2].metric("CCMU3+ (€)", f"{gain_ccmu3:,.0f}")
+kpis[3].metric("UHCD (€)", f"{gain_uhcd:,.0f}")
+st.markdown(
+    f"<h3 style='text-align:center;'>💰 Total estimé : <strong>{total_gain:,.0f} €</strong></h3>",
+    unsafe_allow_html=True,
+)
 st.markdown("---")
 
 # --- TABLEAU DÉTAILLÉ ---
 st.subheader("📋 Détail par levier")
-# Mise à jour des volumes pour majoration
-volumes = [int(nb_avis), int(nb_ccmu2), int(nb_ccmu3), int(nb_mono_suppl), int(nb_mono_actuel + nb_mono_suppl)]
 labels = ["Avis spécialisés", "CCMU 2+", "CCMU 3+", "UHCD mono-RUM base", "Majoration UHCD mono-RUM"]
-data = pd.DataFrame({
-    "Levier": labels,
-    "Volume": volumes,
-    "Gain (€)": [gain_avis, gain_ccmu2, gain_ccmu3, gain_uhcd_base, gain_uhcd_bonus]
-})
+volumes = [int(avis_vol), int(ccmu2_vol), int(ccmu3_vol), int(mono_suppl_vol), int(mono_base_vol + mono_suppl_vol)]
+gains = [gain_avis, gain_ccmu2, gain_ccmu3, gain_uhcd_base, gain_uhcd_bonus]
+data = pd.DataFrame({"Levier": labels, "Volume": volumes, "Gain (€)": gains})
 data["Gain (€)"] = data["Gain (€)"].round(2)
-st.dataframe(data.set_index("Levier"), use_container_width=True)(data.set_index("Levier"), use_container_width=True)
+st.dataframe(data.set_index("Levier"), use_container_width=True)
 
-# --- GRAPHIQUE INTERACTIF ---
+# --- GRAPHIQUE ---
 st.subheader("📈 Impact financier par levier")
 fig = px.bar(
-    data,
-    x="Gain (€)",
-    y="Levier",
-    orientation="h",
-    text="Gain (€)",
-    color="Levier",
-    color_discrete_sequence=px.colors.qualitative.Set2,
-    template="plotly_white"
+    data, x="Gain (€)", y="Levier", orientation="h", text="Gain (€)",
+    color="Levier", color_discrete_sequence=px.colors.qualitative.Set2, template="plotly_white"
 )
 fig.update_traces(textposition='outside', texttemplate='%{text:,.0f}')
 fig.update_layout(margin=dict(l=100, r=20, t=50, b=20))
@@ -111,54 +103,30 @@ st.plotly_chart(fig, use_container_width=True)
 # --- EXPORT PDF ---
 st.markdown("---")
 st.markdown("### 📄 Génération du rapport PDF")
-col_name, col_email = st.columns(2)
-with col_name:
-    prospect_name = st.text_input("Nom de l'établissement prospect:")
-with col_email:
-    prospect_email = st.text_input("Email prospect:")
-
-# Bouton de génération et téléchargement PDF
-if st.button("Générer le rapport PDF"):
-    # Création du PDF en mémoire
+col1, col2 = st.columns(2)
+with col1:
+    prospect = st.text_input("Établissement prospect:")
+with col2:
+    email = st.text_input("Email prospect:")
+if st.button("Générer PDF"):
     pdf = FPDF()
     pdf.add_page()
     pdf.image("logo_complet.png", x=(210-50)/2, w=50)
     pdf.ln(15)
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(0, 10, "Simulation valorisation Urgences", ln=True, align='C')
-    if prospect_name:
-        pdf.set_font("Arial", '', 12)
-        pdf.cell(0, 8, f"Etablissement: {prospect_name}", ln=True, align='C')
+    if prospect:
+        pdf.set_font("Arial", '', 12); pdf.cell(0, 8, f"Prospect: {prospect}", ln=True, align='C')
     pdf.ln(5)
     pdf.set_font("Arial", size=12)
-    for _, row in data.iterrows():
-        pdf.cell(0, 8, f"{row.name}: {row['Volume']} unités => {row['Gain (€)']:.2f} EUR", ln=True)
+    for _, r in data.iterrows():
+        pdf.cell(0, 8, f"{r.name}: {r['Volume']} => {r['Gain (€)']:.2f} EUR", ln=True)
     pdf.ln(5)
-    pdf.set_font("Arial", 'B', 14)
-    pdf.cell(0, 10, f"Total estimé: {total_gain:,.2f} EUR", ln=True, align='C')
-    # Export PDF via download button
+    pdf.set_font("Arial", 'B', 14); pdf.cell(0, 10, f"Total: {total_gain:,.2f} EUR", ln=True, align='C')
     pdf_bytes = pdf.output(dest='S').encode('latin1')
-    st.download_button("📥 Télécharger le PDF", data=pdf_bytes, file_name="simulation.pdf", mime="application/pdf")
-    st.success("PDF généré avec succès !")
-    # Envoi par email si renseigné
-    if prospect_email:
-        try:
-            import smtplib
-            from email.message import EmailMessage
-            msg = EmailMessage()
-            msg['Subject'] = "Rapport Simulation Urgences"
-            msg['From'] = "contact@sclepios-ia.com"
-            msg['To'] = prospect_email
-            msg.set_content("Veuillez trouver le rapport en pièce jointe.")
-            msg.add_attachment(pdf_bytes, maintype='application', subtype='pdf', filename='simulation.pdf')
-            server = smtplib.SMTP_SSL('ssl0.ovh.net', 465)
-            server.login('contact@sclepios-ia.com', '7HMsyrL5nXDRz5MB$F66')
-            server.send_message(msg)
-            server.quit()
-            st.success(f"Email envoyé à {prospect_email}")
-        except Exception as e:
-            st.error(f"Échec envoi email: {e}")
-# Footer
+    st.download_button("Télécharger PDF", data=pdf_bytes, file_name="simulation.pdf", mime="application/pdf")
+    st.success("PDF généré !")
+
 st.markdown("---")
-st.markdown("<div style='text-align:center; color:#2E86AB; font-weight:bold; font-size:16px;'>Rémi Moreau: remi.moreau@sclepios-ia.com</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:#2E86AB; font-weight:bold;'>Rémi Moreau: remi.moreau@sclepios-ia.com</div>", unsafe_allow_html=True)
 st.markdown("<div style='text-align:center;'><a href='https://sclepios-ia.com' style='color:#2E86AB;'>Visitez notre site</a></div>", unsafe_allow_html=True)
