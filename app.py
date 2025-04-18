@@ -105,29 +105,50 @@ st.plotly_chart(fig, use_container_width=True)
 
 # --- EXPORT & EMAIL ---
 st.markdown("---")
-left, right = st.columns(2)
-with left:
-    prospect = st.text_input("Établissement prospect :")
-    if st.button("📥 Télécharger PDF"):
-        pdf_bytes = generate_pdf_bytes(data, total_gain, prospect, "logo_complet.png")
-        st.download_button("Télécharger", data=pdf_bytes, file_name="simulation.pdf", mime="application/pdf")
-with right:
-    email = st.text_input("Email prospect :")
+
+# Saisie prospect et email
+st.subheader("✏️ Export et Envoi du rapport")
+prospect = st.text_input("Établissement prospect :")
+email = st.text_input("Email prospect :")
+
+# Génération du PDF en octets
+if prospect:
+    pdf_bytes = generate_pdf_bytes(data, total_gain, prospect, "logo_complet.png")
+else:
+    pdf_bytes = None
+
+col1, col2 = st.columns(2)
+with col1:
+    if pdf_bytes:
+        st.download_button(
+            label="📥 Télécharger le PDF",
+            data=pdf_bytes,
+            file_name="simulation.pdf",
+            mime="application/pdf"
+        )
+    else:
+        st.info("Entrez le nom de l'établissement pour générer le PDF.")
+with col2:
     if st.button("✉️ Envoyer par email"):
-        try:
-            msg = EmailMessage()
-            msg['Subject'] = "Rapport Simulation Urgences"
-            msg['From'] = "contact@sclepios-ia.com"
-            msg['To'] = email
-            msg.set_content("Veuillez trouver le rapport en pièce jointe.")
-            msg.add_attachment(pdf_bytes, maintype='application', subtype='pdf', filename='simulation.pdf')
-            server = smtplib.SMTP_SSL('ssl0.ovh.net', 465)
-            server.login('contact@sclepios-ia.com', '7HMsyrL5nXDRz5MB$F66')
-            server.send_message(msg)
-            server.quit()
-            st.success(f"Email envoyé à {email}")
-        except Exception as e:
-            st.error(f"Échec envoi email: {e}")
+        if not pdf_bytes:
+            st.error("Générez d'abord le PDF en entrant le nom du prospect.")
+        elif not email:
+            st.error("Veuillez saisir l'adresse email du prospect.")
+        else:
+            try:
+                msg = EmailMessage()
+                msg['Subject'] = "Rapport Simulation Urgences"
+                msg['From'] = "contact@sclepios-ia.com"
+                msg['To'] = email
+                msg.set_content("Veuillez trouver le rapport en pièce jointe.")
+                msg.add_attachment(pdf_bytes, maintype='application', subtype='pdf', filename='simulation.pdf')
+                server = smtplib.SMTP_SSL('ssl0.ovh.net', 465)
+                server.login('contact@sclepios-ia.com', '7HMsyrL5nXDRz5MB$F66')
+                server.send_message(msg)
+                server.quit()
+                st.success(f"Email envoyé à {email}")
+            except Exception as e:
+                st.error(f"Échec envoi email: {e}")
 
 # --- FOOTER ---
 st.markdown("---")
